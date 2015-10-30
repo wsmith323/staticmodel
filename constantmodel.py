@@ -38,7 +38,6 @@ class ConstantModelMeta(type):
         cls._attr_names = tuple(kwargs.pop('attr_names', cls._attr_names))
         cls._index_attr_names = (ATTR_NAME.INSTANCE_VAR.RAW_VALUE,) + tuple(
             kwargs.pop('index_attr_names', cls._attr_names))
-        cls._choice_list_specs = kwargs.pop('choice_list_specs', None)
 
         super().__init__(*args, **kwargs)
 
@@ -54,25 +53,6 @@ class ConstantModelMeta(type):
             setattr(cls, name, value)
 
         del cls._raw_members
-
-        if cls._choice_list_specs is not None:
-            for choice_list_name, choice_list_spec in cls._choice_list_specs.items():
-                try:
-                    getattr(cls, choice_list_name)
-                except AttributeError:
-                    pass
-                else:
-                    raise ValueError("Choice list name '{}' conflicts with"
-                                     " class member.".format(choice_list_name))
-                value_attr_name, display_attr_name = choice_list_spec
-
-                def choice_list_generator(cls):
-                    return ((
-                        getattr(instance, value_attr_name),
-                        getattr(instance, display_attr_name),
-                    ) for instance in cls.all)
-
-                setattr(cls, choice_list_name, classmethod(choice_list_generator))
 
         cls._populate_ancestors(cls)
 
@@ -215,6 +195,21 @@ class ConstantModelMeta(type):
                 '{}.get({}) yielded multiple objects.'.format(
                     cls.__name__, _format_kwargs(kwargs)))
 
+    def values(cls, attr_names=None, criteria=None):
+        if attr_names is None:
+            attr_names = cls._attr_names
+
+        elif not frozenset(attr_names).issubset(frozenset(cls._attr_names)):
+            raise ValueError(
+                "Parameter 'attr_names' is not a subset of available attribute names.")
+
+        if criteria is None:
+            results = cls.all
+        else:
+            results = cls.lookup(**criteria)
+
+        for item in results:
+            yield tuple(getattr(item, attr_name, None) for attr_name in attr_names)
 
     #
     # Private API
