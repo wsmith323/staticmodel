@@ -235,7 +235,7 @@ class ConstantModelMeta(type):
         return str(obj)
 
     def _get_index_search_results(cls, kwargs):
-        # Make sure ATTR_NAME.CLASS_VAR.CONSTANT_NAME gets processed
+        # Make sure ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME gets processed
         # first if it is present. There is no point in hitting the
         # other indexes if we miss there.
         sorted_kwargs = sorted(
