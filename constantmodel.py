@@ -147,7 +147,7 @@ class ConstantModelMeta(type):
     def all(cls):
         return (instance for instance in cls._instances.by_id.values())
 
-    def lookup(cls, **kwargs):
+    def filter(cls, **kwargs):
         if bool(kwargs.pop('_unindexed_search', False)):
             index_search_results = cls.all
         else:
@@ -179,7 +179,7 @@ class ConstantModelMeta(type):
 
     def get(cls, **kwargs):
         try:
-            results = cls.lookup(**kwargs)
+            results = cls.filter(**kwargs)
             result = next(results)
         except cls.DoesNotExist:
             raise cls.DoesNotExist(
@@ -206,7 +206,7 @@ class ConstantModelMeta(type):
         if criteria is None:
             results = cls.all
         else:
-            results = cls.lookup(**criteria)
+            results = cls.filter(**criteria)
 
         for item in results:
             yield tuple(getattr(item, attr_name, None) for attr_name in attr_names)
