@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from collections.abc import Iterable
+from functools import partialmethod
 from types import SimpleNamespace
 
 
@@ -30,7 +31,7 @@ class ConstantModelMeta(type):
             raw_members[attr_name] = attrs[attr_name]
             del attrs[attr_name]
 
-        attrs['_raw_members'] = raw_members
+        attrs['_{}__raw_members'.format(name)] = raw_members
 
         return super().__new__(mcs, name, bases, attrs)
 
@@ -46,13 +47,16 @@ class ConstantModelMeta(type):
         cls._indexes = {}
 
         # Now that the class has been created and initialized
-        # sufficiently, go ahead and add the members.
-        for name, value in cls._raw_members.items():
-            # __setattr__ is the entry point for member instance
-            # creation.
-            setattr(cls, name, value)
+        # sufficiently, go ahead and add the members, if any.
+        raw_members_attr_name = '_{}__raw_members'.format(cls.__name__)
+        raw_members = getattr(cls, raw_members_attr_name, None)
+        if raw_members is not None:
+            for name, value in raw_members.items():
+                # __setattr__ is the entry point for member instance
+                # creation.
+                setattr(cls, name, value)
 
-        del cls._raw_members
+            delattr(cls, raw_members_attr_name)
 
         cls._populate_ancestors(cls)
 
@@ -65,7 +69,7 @@ class ConstantModelMeta(type):
         mcs = cls.__class__
         for parent in child.__bases__:
             if isinstance(parent, mcs):
-                for member in cls.all:
+                for member in cls.all():
                     constant_name = getattr(
                         member, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, None)
                     if constant_name is not None:
@@ -143,7 +147,6 @@ class ConstantModelMeta(type):
         if cls._index_attr_names:
             cls._index_instance(instance)
 
-    @property
     def all(cls):
         return (instance for instance in cls._instances.by_id.values())
 
@@ -175,7 +178,7 @@ class ConstantModelMeta(type):
                     yield result
 
         if not validated_result_ids:
-            raise cls._build_lookup_error(kwargs)
+            raise cls._build_filter_error(kwargs)
 
     def get(cls, **kwargs):
         try:
@@ -195,7 +198,7 @@ class ConstantModelMeta(type):
                 '{}.get({}) yielded multiple objects.'.format(
                     cls.__name__, _format_kwargs(kwargs)))
 
-    def values(cls, attr_names=None, criteria=None):
+    def _values(cls, item_func, attr_names=None, criteria=None):
         if attr_names is None:
             attr_names = cls._attr_names
 
@@ -209,12 +212,16 @@ class ConstantModelMeta(type):
             results = cls.filter(**criteria)
 
         for item in results:
-            yield tuple(getattr(item, attr_name, None) for attr_name in attr_names)
+            yield item_func(item, attr_names)
+
+    values = partialmethod(_values, lambda item, attr_names: dict(tuple(
+        attr_name, getattr(item, attr_name, None)) for attr_name in attr_names))
+    values_list = partialmethod(_values, lambda item, attr_names: tuple(
+        getattr(item, attr_name, None) for attr_name in attr_names))
 
     #
     # Private API
     #
-
     def _index_instance(cls, instance):
         for index_attr in cls._index_attr_names:
             index = cls._indexes.setdefault(index_attr, OrderedDict())
@@ -262,9 +269,9 @@ class ConstantModelMeta(type):
                     for item in result:
                         yield item
 
-    def _build_lookup_error(cls, kwargs):
+    def _build_filter_error(cls, kwargs):
         return cls.DoesNotExist(
-            '{}.lookup({}) yielded no objects.'.format(
+            '{}.filter({}) yielded no objects.'.format(
                 cls.__name__, _format_kwargs(kwargs)))
 
     class ConstantLookupError(Exception):
