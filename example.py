@@ -1,7 +1,8 @@
 from constantmodel import ConstantModel
 
 
-class Base(ConstantModel, attr_names=('code', 'name', 'description')):
+class Base(ConstantModel):
+    _attr_names = 'code', 'name', 'description'
 
     def talk(self, greeting='Hello'):
         print('{greeting}. My name is {name}. Pleased to meet you.'.format(
@@ -27,7 +28,8 @@ class Base(ConstantModel, attr_names=('code', 'name', 'description')):
             decendent_class.converse(turn_taken=turn_taken)
 
 
-class FarmAnimal(Base, attr_names=('code', 'name', 'description', 'extra')):
+class FarmAnimal(Base):
+    _attr_names = Base._attr_names + ('extra',)
     SUB_1_VAL_1 = ('s1v1', 'sub_1_val_1', 'Subclass 1, Value 1', 'stuff1')
     SUB_1_VAL_2 = ('s1v2', 'sub_1_val_2', 'Subclass 1, Value 2', 'stuff2')
 

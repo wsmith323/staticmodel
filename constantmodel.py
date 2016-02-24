@@ -5,6 +5,9 @@ from types import SimpleNamespace
 
 
 class ATTR_NAME:
+    class CLASS_VAR:
+        ATTR_NAMES = '_attr_names'
+        INDEX_ATTR_NAMES = '_index_attr_names'
     class INSTANCE_VAR:
         CONSTANT_NAME = '_constant_name'
         RAW_VALUE = '_raw_value'
@@ -36,9 +39,16 @@ class ConstantModelMeta(type):
         return super().__new__(mcs, name, bases, attrs)
 
     def __init__(cls, *args, **kwargs):
-        cls._attr_names = tuple(kwargs.pop('attr_names', cls._attr_names))
-        cls._index_attr_names = (ATTR_NAME.INSTANCE_VAR.RAW_VALUE,) + tuple(
-            kwargs.pop('index_attr_names', cls._attr_names))
+        cls._attr_names = tuple(kwargs.pop(
+            ATTR_NAME.CLASS_VAR.ATTR_NAMES.lstrip('_'), getattr(
+                cls, ATTR_NAME.CLASS_VAR.ATTR_NAMES, ())))
+
+        index_attr_names = tuple(kwargs.pop(
+            ATTR_NAME.CLASS_VAR.INDEX_ATTR_NAMES.lstrip('_'), getattr(
+                cls, ATTR_NAME.CLASS_VAR.INDEX_ATTR_NAMES, ()))) or cls._attr_names
+        if ATTR_NAME.INSTANCE_VAR.RAW_VALUE not in index_attr_names:
+            index_attr_names = (ATTR_NAME.INSTANCE_VAR.RAW_VALUE,) + index_attr_names
+        cls._index_attr_names = index_attr_names
 
         super().__init__(*args, **kwargs)
 
