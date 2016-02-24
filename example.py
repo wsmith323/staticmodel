@@ -29,7 +29,7 @@ class Base(ConstantModel):
 
 
 class FarmAnimal(Base):
-    _attr_names = Base._attr_names + ('extra',)
+    _attr_names = 'code', 'name', 'description', 'extra'
     SUB_1_VAL_1 = ('s1v1', 'sub_1_val_1', 'Subclass 1, Value 1', 'stuff1')
     SUB_1_VAL_2 = ('s1v2', 'sub_1_val_2', 'Subclass 1, Value 2', 'stuff2')
 
@@ -38,14 +38,15 @@ class FarmAnimal(Base):
 
 
 class HousePet(Base):
-    SUB_2_VAL_1 = ('s2v1', 'sub_2_val_1', 'Subclass 2, Value 1')
-    SUB_2_VAL_2 = ('s2v2', 'sub_2_val_2', 'Subclass 2, Value 2')
+    _attr_names = Base._attr_names + ('extra',)
+    SUB_2_VAL_1 = ('s2v1', 'sub_2_val_1', 'Subclass 2, Value 1', 'stuff1')
+    SUB_2_VAL_2 = ('s2v2', 'sub_2_val_2', 'Subclass 2, Value 2', 'stuff2')
 
     def talk(self, greeting='My human will be home any moment'):
         super().talk(greeting=greeting)
 
 
-class Cow(FarmAnimal):
+class Cow(FarmAnimal, attr_names=FarmAnimal._attr_names[:-1]):
     SUB_3_VAL_1 = ('s3v1', 'sub_3_val_1', 'Subclass 3, Value 1', 'stuff1')
     SUB_3_VAL_2 = ('s3v2', 'sub_3_val_2', 'Subclass 3, Value 2', 'stuff2')
 
@@ -53,9 +54,9 @@ class Cow(FarmAnimal):
         super().talk(greeting=', '.join(greeting for i in range(2)))
 
 
-class Cat(HousePet):
-    SUB_4_VAL_1 = ('s4v1', 'sub_4_val_1', 'Subclass 4, Value 1')
-    SUB_4_VAL_2 = ('s4v2', 'sub_4_val_2', 'Subclass 4, Value 2')
+class Cat(HousePet, index_attr_names=HousePet._index_attr_names[:-1]):
+    SUB_4_VAL_1 = ('s4v1', 'sub_4_val_1', 'Subclass 4, Value 1', 'stuff1')
+    SUB_4_VAL_2 = ('s4v2', 'sub_4_val_2', 'Subclass 4, Value 2', 'stuff2')
 
     def talk(self, greeting='Meow'):
         print('{greeting}. You bore me.'.format(greeting=greeting))

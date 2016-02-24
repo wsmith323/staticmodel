@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from collections.abc import Iterable
 from functools import partialmethod
+from itertools import chain
 from types import SimpleNamespace
 
 
@@ -70,26 +71,17 @@ class ConstantModelMeta(type):
 
         cls._populate_ancestors(cls)
 
-    def _populate_ancestors(cls, child):
-        # This method recursively adds sub_class members to all
-        # ancestor classes that are instances of this metaclass,
-        # enabling parent classes to have members that are instances
-        # of child classes not yet defined when the parent class
-        # definition is executed.
-        mcs = cls.__class__
-        for parent in child.__bases__:
-            if isinstance(parent, mcs):
-                for member in cls.all():
-                    constant_name = getattr(
-                        member, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, None)
-                    if constant_name is not None:
-                        setattr(parent, constant_name, member)
-
-                cls._populate_ancestors(parent)
-
     #
     # Public API
     #
+    class ConstantLookupError(Exception):
+        pass
+
+    class DoesNotExist(ConstantLookupError):
+        pass
+
+    class MultipleObjectsReturned(ConstantLookupError):
+        pass
 
     def __repr__(cls):
         return '<ConstantModel {}: Instances: {}, Indexes: {}>'.format(
@@ -142,21 +134,6 @@ class ConstantModelMeta(type):
 
         return instance
 
-    def _process_new_instance(cls, constant_name, instance):
-        instance_cn = getattr(instance, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, None)
-        if instance_cn and constant_name and instance_cn != constant_name:
-            raise ValueError(
-                'Constant value {!r} already has a constant name'.format(
-                    instance))
-
-        setattr(instance, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, constant_name)
-
-        cls._instances.by_id[id(instance)] = instance
-        if constant_name is not None:
-            cls._instances.by_constant_name[constant_name] = instance
-        if cls._index_attr_names:
-            cls._index_instance(instance)
-
     def all(cls):
         return (instance for instance in cls._instances.by_id.values())
 
@@ -208,30 +185,70 @@ class ConstantModelMeta(type):
                 '{}.get({}) yielded multiple objects.'.format(
                     cls.__name__, _format_kwargs(kwargs)))
 
-    def _values(cls, item_func, attr_names=None, criteria=None):
+    def _values(cls, item_func, attr_names=None, criteria=None, allow_flat=False,
+                flat=False):
         if attr_names is None:
             attr_names = cls._attr_names
 
-        elif not frozenset(attr_names).issubset(frozenset(cls._attr_names)):
+        elif not frozenset(attr_names).issubset(frozenset(cls._attr_names + (
+                ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME,
+                ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME))):
             raise ValueError(
                 "Parameter 'attr_names' is not a subset of available attribute names.")
 
         if criteria is None:
-            results = cls.all
+            results = cls.all()
         else:
             results = cls.filter(**criteria)
 
-        for item in results:
-            yield item_func(item, attr_names)
+        if allow_flat and flat:
+            for flat_item in chain.from_iterable(
+                    item_func(item, attr_names) for item in results):
+                yield flat_item
+        else:
+            for item in results:
+                yield item_func(item, attr_names)
 
-    values = partialmethod(_values, lambda item, attr_names: dict(tuple(
-        attr_name, getattr(item, attr_name, None)) for attr_name in attr_names))
+    values = partialmethod(_values, lambda item, attr_names: {
+        attr_name: getattr(item, attr_name, None) for attr_name in attr_names})
     values_list = partialmethod(_values, lambda item, attr_names: tuple(
-        getattr(item, attr_name, None) for attr_name in attr_names))
+        getattr(item, attr_name, None) for attr_name in attr_names), allow_flat=True)
 
     #
     # Private API
     #
+    def _populate_ancestors(cls, child):
+        # This method recursively adds sub_class members to all
+        # ancestor classes that are instances of this metaclass,
+        # enabling parent classes to have members that are instances
+        # of child classes not yet defined when the parent class
+        # definition is executed.
+        mcs = cls.__class__
+        for parent in child.__bases__:
+            if isinstance(parent, mcs):
+                for member in cls.all():
+                    constant_name = getattr(
+                        member, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, None)
+                    if constant_name is not None:
+                        setattr(parent, constant_name, member)
+
+                cls._populate_ancestors(parent)
+
+    def _process_new_instance(cls, constant_name, instance):
+        instance_cn = getattr(instance, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, None)
+        if instance_cn and constant_name and instance_cn != constant_name:
+            raise ValueError(
+                'Constant value {!r} already has a constant name'.format(
+                    instance))
+
+        setattr(instance, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, constant_name)
+
+        cls._instances.by_id[id(instance)] = instance
+        if constant_name is not None:
+            cls._instances.by_constant_name[constant_name] = instance
+        if cls._index_attr_names:
+            cls._index_instance(instance)
+
     def _index_instance(cls, instance):
         for index_attr in cls._index_attr_names:
             index = cls._indexes.setdefault(index_attr, OrderedDict())
@@ -283,15 +300,6 @@ class ConstantModelMeta(type):
         return cls.DoesNotExist(
             '{}.filter({}) yielded no objects.'.format(
                 cls.__name__, _format_kwargs(kwargs)))
-
-    class ConstantLookupError(Exception):
-        pass
-
-    class DoesNotExist(ConstantLookupError):
-        pass
-
-    class MultipleObjectsReturned(ConstantLookupError):
-        pass
 
 
 class ConstantModel(metaclass=ConstantModelMeta):
