@@ -1,18 +1,85 @@
 """
-ConstantModel is intended to simplify the creation of in-memory models
-whose members are defined at import time and are therefore considered
-constant.
+**ConstantModel** provides a simple framework for modeling
+*Statically Defined Objects*. These are objects that might otherwise
+be modeled using persistence technologies such as Django models etc.
 
-ConstantModel sub-classes can contain anything normal classes can
-contain. They can be sub-classed just like normal classes.
+#######################################
+The case for Statically Defined Objects
+#######################################
 
-The metaclass for ConstantModel provides each sub-class with extended
-behavior. The following examples provide details about this behavior.
+Often, portions of an application's data model are comprised of
+*fixture* data. These are usually small collections of objects that
+rarely change.
 
+Often these fixtures are *code-significant*. In other words, the code
+has knowledge about individual instances or groups of instances.
 
-The Basics:
+When these fixtures are modeled using traditional persistence
+technologies, problems often arise. Keeping the persistently stored
+versions of the objects correct across development, testing, staging,
+and production environments becomes challenging.
 
-A constant model is simply a class that extends ConstantModel.
+Very often, there is no business reason for these collections of
+objects to be in the database. The application users have no need
+to modify them. The application provides no facility *to* modify them.
+The hardware resources required to read them from persistent storage
+is just needless overhead.
+
+These objects are not really data at all. They are code. The only
+versions that need to exist are the static definitions in the code,
+and the instances in memory created by executing the code.
+
+Furthermore, when the object definitions *do* occasionally change,
+it is highly likely that those changes should be subject to the same
+quality control processes as the rest of the code.
+
+######################
+Why use ConstantModel?
+######################
+
+Say we wanted to create a small collection of objects that modeled
+animals. Each object would have significance in our code. Users would
+not need to modify them. We now know that Statically Defined Objects
+make much more sense than persisting these to the database.
+
+These basic requirements could be satisfied using standard python
+language features such as Enum, SimpleNamespace, namedtuple,
+custom classes, etc.
+
+However, requirements often get more complex. Let us also assert that
+our animal objects will have multiple attributes. In addition, we need
+a shallow class hierarchy with some polymorphic methods. Enum,
+SimpleNamespace, and namedtuple just dropped out as contenders. We are
+now in custom class territory. Let us further assert that we need to be
+able to retrieve and filter these objects by their attribute values.
+The amount of complexity in those custom classes just went way up. Now,
+lets add the constraint that we desire code that is declarative,
+concise, and has a fairly high signal-to-noise ratio. Well, in order for
+us to have all the functionality we want, the complexity has to go
+somewhere. We will have to find ways to remove it *from* our code, or
+spend a considerable amount of time managing it *in* our code.
+
+Enter ConstantModel.
+
+ConstantModel is intended to simplify the creation of Statically
+Defined Objects. ConstantModel definitions declare member attribute
+names and member attribute values in a very concise manner. Members
+are instances of the model. The ConstantModel metaclass processes each
+model definition and provides each model with some special behavior.
+
+The following explanations and examples provide details about that
+behavior.
+
+##########
+The Basics
+##########
+
+******
+Models
+******
+
+A model is defined using the class statement to create a sub-class
+of ConstantModel.
 
 Member attribute names are declared with the `_attr_names` class
 attribute. The value should be a sequence of strings.
@@ -20,6 +87,9 @@ attribute. The value should be a sequence of strings.
 Members are declared with an uppercase class attribute. Member values
 should be sequences with the same number of items as the value of
 `_attr_names`.
+
+Models can contain anything normal classes can contain, and that code
+should work as expected, for the most part.
 
 >>> from pprint import pprint as pp
 >>>
@@ -35,7 +105,7 @@ should be sequences with the same number of items as the value of
 ...     model_greeting = 'Greetings.'
 ...     member_greeting = 'Hello.'
 ...
-...     def talk(self, greeting=None):
+...     def member_talk(self, greeting=None):
 ...         greeting = greeting or self.member_greeting
 ...         print('{greeting} My name is {name}. Pleased to meet you.'.format(
 ...             greeting=greeting, name=self.get_name()))
@@ -44,7 +114,7 @@ should be sequences with the same number of items as the value of
 ...         return self.name
 ...
 ...     @classmethod
-...     def members_talk(cls, greeting=None, members_spoken=None):
+...     def model_talk(cls, greeting=None, members_spoken=None):
 ...         greeting = greeting or cls.model_greeting
 ...         print('{greeting} We are {cls.__name__}s.'.format(greeting=greeting,
 ...             cls=cls))
@@ -58,40 +128,64 @@ should be sequences with the same number of items as the value of
 ...             member_id = id(member)
 ...             if member_id not in members_spoken:
 ...                 members_spoken.add(member_id)
-...                 member.talk()
+...                 member.member_talk()
 ...
 ...         for submodel in cls.submodels:
-...             submodel.members_talk(members_spoken=members_spoken)
+...             submodel.model_talk(members_spoken=members_spoken)
 ...
+
+The entire collection of members can be retrieved with the :py:meth:`~ConstantModel.all` method.
+
 >>> pp(list(Animal.all()))
 [<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
  <Animal.CAT: species='irrelevant', name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
 
-NOTE: These ConstantModel methods return generators:
-        - .all()
-        - .filter()
-        - .values()
-        - .values_list()
+ **NOTE:** These :py:class:`ConstantModel` methods return generators:
 
-      For demonstration purposes in all of these examples, we consume
-      those generators with list().
+   - :py:meth:`~ConstantModel.all`
+   - :py:meth:`~ConstantModel.filter`
+   - :py:meth:`~ConstantModel.values`
+   - :py:meth:`~ConstantModel.values_list`
 
-Sub-models inherit the member attribute names of their parent model,
-but not the members of their parent model.
+ For demonstration purposes in all of these examples, we consume
+ those generators with :py:func:`list`.
+
+**********
+Sub-models
+**********
+
+Models can have sub-models. Sub-models are created using normal
+sub-class semantics.
 
 >>> class Mammal(Animal):
 ...     DEER = 'whitetail', 'Bambi', 'Likes to hide', False
 ...     ANTELOPE = 'pronghorn', 'Speedy', 'Likes to run', False
+
+Sub-models **inherit the member attribute names** of their parent model.
+
+>>> Mammal._attr_names
+('species', 'name', 'description', 'domesticated')
+>>>
+>>> Mammal.DEER
+<Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>
+>>>
+
+However, sub-models **DO NOT inherit the members** of their parent model.
+
+>>> Mammal.DOG
+Traceback (most recent call last):
+    ...
+AttributeError: 'Mammal' object has no attribute 'DOG'
 >>>
 >>> pp(list(Mammal.all()))
 [<Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>,
  <Mammal.ANTELOPE: species='pronghorn', name='Speedy', description='Likes to run', domesticated=False>]
 >>>
 
-Parent models gain the members of their sub-models. Notice that the
-`Animal` model now contains the members just defined in the `Mammal`
-sub-model.
+Parent models **gain the members** of their sub-models. Notice that the
+**Animal** model now contains the members just defined in the
+**Mammal** sub-model.
 
 >>> pp(list(Animal.all()))
 [<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
@@ -100,13 +194,22 @@ sub-model.
  <Mammal.ANTELOPE: species='pronghorn', name='Speedy', description='Likes to run', domesticated=False>]
 >>>
 
-A model member may be retrieved using the model's .get() method.
+The members that the parent has gained behave just like the members
+that were defined in the parent model, except they are instances of
+the sub-model instead of the parent model.
+
+>>> Animal.DEER
+<Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>
+>>>
+
+
+A model member may be retrieved using the model's :py:meth:`~ConstantModel.get` method.
 
 >>> Mammal.get(name='Bambi')
 <Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>
 >>>
 
-Model members may be filtered with the model's .filter() method.
+Model members may be filtered with the model's :py:meth:`~ConstantModel.filter` method.
 
 >>> pp(list(Animal.filter(domesticated=True)))
 [<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
@@ -114,12 +217,14 @@ Model members may be filtered with the model's .filter() method.
 >>>
 
 Additional attribute names can be provided by overriding `_attr_names`
-in sub-models.
+in sub-models. If the intent is to extend the parent model's
+attribute definitions, a good practice is to reference the parent
+model's values as demonstrated in the **HousePet** model below.
 
-Model filtering only uses attributes in the 'index' by default for
-performance reasons. By default, the index includes all values of
-the base model's `_attr_names`. The index attributes of any model
-can be set explicitly by overriding `_index_attr_names`.
+Model filtering only uses attributes in the 'index' by default, and by
+default, the index only includes the values of the base model's
+`_attr_names` attribute. The index attributes of any model can be set
+explicitly by overriding it's `_index_attr_names` attribute.
 
 >>> class HousePet(Animal):
 ...     _attr_names = Animal._attr_names + ('facility',)
@@ -128,8 +233,8 @@ can be set explicitly by overriding `_index_attr_names`.
 ...     FISH = 'clownfish', 'Nemo', 'Found at last', True, 'tank'
 ...     RODENT = 'hamster', 'Freddy', 'The Golden One', True, 'cage'
 ...
-...     def talk(self, greeting=None):
-...         super().talk(
+...     def member_talk(self, greeting=None):
+...         super().member_talk(
 ...             greeting=greeting or "Come in. Excuse the mess. My human hasn't cleaned"
 ...                 " my {} in a while.".format(self.facility))
 ...
@@ -175,11 +280,11 @@ values.
 ...     model_greeting = 'Howdy!'
 ...     member_greeting = 'Howdy!'
 ...
-...     def talk(self, greeting="Help! Save me! They are going to eat me!"):
+...     def member_talk(self, greeting="Help! Save me! They are going to eat me!"):
 ...         if self.butcher_involved:
-...             super().talk(greeting=greeting)
+...             super().member_talk(greeting=greeting)
 ...         else:
-...             super().talk()
+...             super().member_talk()
 ...
 ...     def get_name(self):
 ...         return self.character
@@ -318,7 +423,27 @@ Polymorphism:
 
 ConstantModel features enable polymorphic behavior.
 
->>> Animal.members_talk(greeting='Grrrreeeeetings.')
+When each model is defined, it registers itself with its parent model.
+The sub-models of any model are available via the :py:attr:`~ConstantModel.submodels` property.
+
+>>> def walk_submodels(model, indent=''):
+...     submodels = model.submodels
+...     if submodels:
+...         indent = indent + '  ' if indent else indent
+...         print('{}Sub-models of {!r}:'.format(indent, model.__name__))
+...         indent += '  '
+...         for submodel in submodels:
+...             print('{}{!r}'.format(indent, submodel.__name__))
+...             walk_submodels(submodel, indent=indent)
+...
+>>> walk_submodels(Animal)
+Sub-models of 'Animal':
+  'Mammal'
+  'HousePet'
+  'FarmAnimal'
+>>>
+
+>>> Animal.model_talk(greeting='Grrrreeeeetings.')
 Grrrreeeeetings. We are Animals.
 Hello. My name is Spot. Pleased to meet you.
 Hello. My name is Fluffy. Pleased to meet you.
@@ -417,6 +542,17 @@ class ConstantModelMeta(type):
     def __repr__(cls):
         return '<ConstantModel {}: Instances: {}, Indexes: {}>'.format(
             cls.__name__, len(cls._instances.by_id), cls._index_attr_names)
+
+    def __getattribute__(cls, item):
+        item = str(item)
+        if item.upper() == item:
+            try:
+                return cls.__dict__[item]
+            except KeyError:
+                raise AttributeError('{!r} object has no attribute {!r}'.format(
+                    cls.__name__, item))
+        else:
+            return super().__getattribute__(item)
 
     def __setattr__(cls, key, value):
         if key.startswith('_') or key != key.upper():
