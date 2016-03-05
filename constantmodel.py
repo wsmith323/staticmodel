@@ -130,7 +130,7 @@ should work as expected, for the most part.
 ...                 members_spoken.add(member_id)
 ...                 member.member_talk()
 ...
-...         for submodel in cls.submodels:
+...         for submodel in cls.submodels():
 ...             submodel.model_talk(members_spoken=members_spoken)
 ...
 
@@ -202,6 +202,9 @@ the sub-model instead of the parent model.
 <Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>
 >>>
 
+*********************
+Member access methods
+*********************
 
 A model member may be retrieved using the model's :py:meth:`~ConstantModel.get` method.
 
@@ -280,18 +283,26 @@ values.
 ...     model_greeting = 'Howdy!'
 ...     member_greeting = 'Howdy!'
 ...
-...     def member_talk(self, greeting="Help! Save me! They are going to eat me!"):
+...     def member_talk(self, greeting=None):
 ...         if self.butcher_involved:
-...             super().member_talk(greeting=greeting)
+...             super().member_talk(greeting="Help! Save me! They are going to eat me!")
 ...         else:
-...             super().member_talk()
+...             super().member_talk(greeting=greeting)
+...
+...     @classmethod
+...     def model_talk(cls, greeting=None, members_spoken=None):
+...         super().model_talk(greeting=greeting, members_spoken=members_spoken)
+...         print("Well, we shur did 'njoy chewin' the fat for a spell.")
+...         print("Ya'll come back an' see us real soon now, ya hear!")
+...         print("(And don't pay Porky no mine. He always bin a bit of a drama queen.)")
 ...
 ...     def get_name(self):
 ...         return self.character
 >>>
 
-
-Primitive Collections:
+=====================
+Primitive Collections
+=====================
 
 Model members may be rendered as primitive collections.
 
@@ -419,29 +430,58 @@ when combined with limiting the results to a single attribute name.
 ['Spot', 'Fluffy', 'Bambi', 'Speedy', 'Nemo', 'Freddy']
 >>>
 
-Polymorphism:
-
-ConstantModel features enable polymorphic behavior.
+************
+Polymorphism
+************
 
 When each model is defined, it registers itself with its parent model.
 The sub-models of any model are available via the :py:attr:`~ConstantModel.submodels` property.
 
+>>> pp(list(Animal.submodels()))
+[<ConstantModel Mammal: Instances: 2, Indexes: ('species', 'name', 'description', 'domesticated')>,
+ <ConstantModel HousePet: Instances: 2, Indexes: ('name', 'domesticated', 'facility')>,
+ <ConstantModel FarmAnimal: Instances: 2, Indexes: ('food_provided', 'character', 'occupation', 'butcher_involved')>]
+>>>
+
 >>> def walk_submodels(model, indent=''):
-...     submodels = model.submodels
+...     print('{}Model:{}'.format(indent, model.__name__))
+...     print('{}  Members:'.format(indent))
+...     for member in model.all():
+...         print('{}    {}'.format(indent, member._constant_name))
+...     submodels = list(model.submodels())
 ...     if submodels:
-...         indent = indent + '  ' if indent else indent
-...         print('{}Sub-models of {!r}:'.format(indent, model.__name__))
-...         indent += '  '
+...         print('{}  Sub-models:'.format(indent))
+...         new_indent = indent + '    '
 ...         for submodel in submodels:
-...             print('{}{!r}'.format(indent, submodel.__name__))
-...             walk_submodels(submodel, indent=indent)
+...             walk_submodels(submodel, indent=new_indent)
 ...
 >>> walk_submodels(Animal)
-Sub-models of 'Animal':
-  'Mammal'
-  'HousePet'
-  'FarmAnimal'
+Model:Animal
+  Members:
+    DOG
+    CAT
+    DEER
+    ANTELOPE
+    FISH
+    RODENT
+    PIG
+    CHICKEN
+  Sub-models:
+    Model:Mammal
+      Members:
+        DEER
+        ANTELOPE
+    Model:HousePet
+      Members:
+        FISH
+        RODENT
+    Model:FarmAnimal
+      Members:
+        PIG
+        CHICKEN
 >>>
+
+Polymorphic methods
 
 >>> Animal.model_talk(greeting='Grrrreeeeetings.')
 Grrrreeeeetings. We are Animals.
@@ -456,6 +496,9 @@ Come in. Excuse the mess. My human hasn't cleaned my cage in a while. My name is
 Howdy! We are FarmAnimals.
 Help! Save me! They are going to eat me! My name is Porky Pig. Pleased to meet you.
 Howdy! My name is Chicken Little. Pleased to meet you.
+Well, we shur did 'njoy chewin' the fat for a spell.
+Ya'll come back an' see us real soon now, ya hear!
+(And don't pay Porky no mine. He always bin a bit of a drama queen.)
 >>>
 """
 from collections import OrderedDict
@@ -601,9 +644,8 @@ class ConstantModelMeta(type):
 
         return instance
 
-    @property
     def submodels(cls):
-        return tuple(cls._submodels.keys())
+        return (submodel for submodel in cls._submodels.keys())
 
     def register_submodel(cls, submodel):
         cls._submodels[submodel] = None
@@ -671,7 +713,7 @@ class ConstantModelMeta(type):
                 (ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME,
                  ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME),
                 cls._attr_names,
-                chain.from_iterable(submodel._attr_names for submodel in cls.submodels)
+                chain.from_iterable(submodel._attr_names for submodel in cls.submodels())
                 ))):
             raise ValueError(
                 "Parameter 'attr_names' is not a subset of available attribute names.")
