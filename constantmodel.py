@@ -1,7 +1,8 @@
 """
-**ConstantModel** provides a simple framework for modeling
+**ConstantModel** provides a simple framework for modeling complex
 *Statically Defined Objects*. These are objects that might otherwise
-be modeled using persistence technologies such as Django models etc.
+be modeled using persistence technologies such as Django models, but
+that do not belong in the database.
 
 #######################################
 The case for Statically Defined Objects
@@ -278,7 +279,7 @@ values.
 ...     _attr_names = 'food_provided', 'character', 'occupation', 'butcher_involved'
 ...     _index_attr_names = _attr_names
 ...     PIG = 'bacon', 'Porky Pig', "President, All Folks Actors Guild", True
-...     CHICKEN = 'eggs', 'Chicken Little', 'Falling Sky Insurance Salesman', False
+...     CHICKEN = 'eggs', 'Chicken Little', 'Salesman, Falling Sky Insurance', False
 ...
 ...     model_greeting = 'Howdy!'
 ...     member_greeting = 'Howdy!'
@@ -435,13 +436,16 @@ Polymorphism
 ************
 
 When each model is defined, it registers itself with its parent model.
-The sub-models of any model are available via the :py:attr:`~ConstantModel.submodels` property.
+The sub-models of any model are available via the :py:meth:`~ConstantModel.submodels` method.
 
 >>> pp(list(Animal.submodels()))
 [<ConstantModel Mammal: Instances: 2, Indexes: ('species', 'name', 'description', 'domesticated')>,
  <ConstantModel HousePet: Instances: 2, Indexes: ('name', 'domesticated', 'facility')>,
  <ConstantModel FarmAnimal: Instances: 2, Indexes: ('food_provided', 'character', 'occupation', 'butcher_involved')>]
 >>>
+
+The following recursive function demonstrates using the :py:meth:`~ConstantModel.submodels` method
+to walk the entire model tree.
 
 >>> def walk_submodels(model, indent=''):
 ...     print('{}Model:{}'.format(indent, model.__name__))
@@ -481,7 +485,7 @@ Model:Animal
         CHICKEN
 >>>
 
-Polymorphic methods
+Finally, polymorphic methods work as expected.
 
 >>> Animal.model_talk(greeting='Grrrreeeeetings.')
 Grrrreeeeetings. We are Animals.
@@ -686,14 +690,17 @@ class ConstantModelMeta(type):
         if not validated_result_ids:
             raise cls._build_filter_error(kwargs)
 
-    def get(cls, **kwargs):
+    def get(cls, _return_none=False, **kwargs):
         try:
             results = cls.filter(**kwargs)
             result = next(results)
         except cls.DoesNotExist:
-            raise cls.DoesNotExist(
-                '{}.get({}) yielded no objects.'.format(
-                    cls.__name__, _format_kwargs(kwargs)))
+            if _return_none:
+                return None
+            else:
+                raise cls.DoesNotExist(
+                    '{}.get({}) yielded no objects.'.format(
+                        cls.__name__, _format_kwargs(kwargs)))
 
         try:
             next(results)
@@ -712,8 +719,10 @@ class ConstantModelMeta(type):
         elif not frozenset(attr_names).issubset(frozenset(chain(
                 (ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME,
                  ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME),
-                cls._attr_names,
-                chain.from_iterable(submodel._attr_names for submodel in cls.submodels())
+                chain(cls.__dict__.keys(), cls._attr_names),
+                chain.from_iterable(chain(
+                    submodel.__dict__.keys(), submodel._attr_names)
+                        for submodel in cls.submodels())
                 ))):
             raise ValueError(
                 "Parameter 'attr_names' is not a subset of available attribute names.")
