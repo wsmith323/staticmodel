@@ -123,7 +123,7 @@ should work as expected, for the most part.
 ...         if members_spoken is None:
 ...             members_spoken = set()
 ...
-...         for member in cls.all():
+...         for member in cls.members.all():
 ...             if member.__class__ is not cls:
 ...                 continue
 ...             member_id = id(member)
@@ -137,17 +137,17 @@ should work as expected, for the most part.
 
 The entire collection of members can be retrieved with the :py:meth:`~ConstantModel.all` method.
 
->>> pp(list(Animal.all()))
+>>> pp(list(Animal.members.all()))
 [<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
  <Animal.CAT: species='irrelevant', name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
 
  **NOTE:** These :py:class:`ConstantModel` methods return generators:
 
-   - :py:meth:`~ConstantModel.all`
-   - :py:meth:`~ConstantModel.filter`
-   - :py:meth:`~ConstantModel.values`
-   - :py:meth:`~ConstantModel.values_list`
+   - :py:meth:`~ConstantModel.members.all`
+   - :py:meth:`~ConstantModel.members.filter`
+   - :py:meth:`~ConstantModel.members.values`
+   - :py:meth:`~ConstantModel.members.values_list`
 
  For demonstration purposes in all of these examples, we consume
  those generators with :py:func:`list`.
@@ -179,7 +179,7 @@ Traceback (most recent call last):
     ...
 AttributeError: 'Mammal' object has no attribute 'DOG'
 >>>
->>> pp(list(Mammal.all()))
+>>> pp(list(Mammal.members.all()))
 [<Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>,
  <Mammal.ANTELOPE: species='pronghorn', name='Speedy', description='Likes to run', domesticated=False>]
 >>>
@@ -188,7 +188,7 @@ Parent models **gain the members** of their sub-models. Notice that the
 **Animal** model now contains the members just defined in the
 **Mammal** sub-model.
 
->>> pp(list(Animal.all()))
+>>> pp(list(Animal.members.all()))
 [<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
  <Animal.CAT: species='irrelevant', name='Fluffy', description="Man's gracious overlord", domesticated=True>,
  <Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>,
@@ -209,13 +209,13 @@ Member access methods
 
 A model member may be retrieved using the model's :py:meth:`~ConstantModel.get` method.
 
->>> Mammal.get(name='Bambi')
+>>> Mammal.members.get(name='Bambi')
 <Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>
 >>>
 
 Model members may be filtered with the model's :py:meth:`~ConstantModel.filter` method.
 
->>> pp(list(Animal.filter(domesticated=True)))
+>>> pp(list(Animal.members.filter(domesticated=True)))
 [<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
  <Animal.CAT: species='irrelevant', name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
@@ -247,7 +247,7 @@ explicitly by overriding it's `_index_attr_names` attribute.
 Filtering a model with an attribute name that is not in its index
 will raise a ValueError exception.
 
->>> pp(list(HousePet.filter(species='clownfish')))
+>>> pp(list(HousePet.members.filter(species='clownfish')))
 Traceback (most recent call last):
     ...
 ValueError: Attribute 'species' is not in the index.
@@ -257,17 +257,17 @@ To force a non-indexed linear search over any and all attributes
 that exist on any model members, add the keyword argument
 `_unindexed_search=True` to the .filter() method.
 
->>> pp(list(HousePet.filter(species='clownfish', _unindexed_search=True)))
+>>> pp(list(HousePet.members.filter(species='clownfish', _unindexed_search=True)))
 [<HousePet.FISH: species='clownfish', name='Nemo', description='Found at last', domesticated=True, facility='tank'>]
 >>>
 
 The name of the constant used on the model is automatically in the
 index and can be used in queries.
 
->>> HousePet.get(_constant_name='FISH')
+>>> HousePet.members.get(_constant_name='FISH')
 <HousePet.FISH: species='clownfish', name='Nemo', description='Found at last', domesticated=True, facility='tank'>
 >>>
->>> pp(list(Animal.filter(_constant_name='RODENT')))
+>>> pp(list(Animal.members.filter(_constant_name='RODENT')))
 [<HousePet.RODENT: species='hamster', name='Freddy', description='The Golden One', domesticated=True, facility='cage'>]
 >>>
 
@@ -307,7 +307,7 @@ Primitive Collections
 
 Model members may be rendered as primitive collections.
 
->>> pp(list(HousePet.values()))
+>>> pp(list(HousePet.members.values()))
 [{'species': 'clownfish',
   'name': 'Nemo',
   'description': 'Found at last',
@@ -319,14 +319,14 @@ Model members may be rendered as primitive collections.
   'domesticated': True,
   'facility': 'cage'}]
 >>>
->>> pp(list(HousePet.values_list()))
+>>> pp(list(HousePet.members.values_list()))
 [('clownfish', 'Nemo', 'Found at last', True, 'tank'),
  ('hamster', 'Freddy', 'The Golden One', True, 'cage')]
 >>>
 
 The primitive collections may be filtered by providing criteria.
 
->>> pp(list(Animal.values(criteria={'species': 'hamster'})))
+>>> pp(list(Animal.members.values(criteria={'species': 'hamster'})))
 [{'species': 'hamster',
   'name': 'Freddy',
   'description': 'The Golden One',
@@ -336,12 +336,12 @@ The primitive collections may be filtered by providing criteria.
 The same rules apply for `criteria` as for .filter() with regards to
 attributes in the index.
 
->>> pp(list(Animal.values(criteria={'facility': 'tank'})))
+>>> pp(list(Animal.members.values(criteria={'facility': 'tank'})))
 Traceback (most recent call last):
     ...
 ValueError: Attribute 'facility' is not in the index.
 >>>
->>> pp(list(Animal.values(criteria={'facility': 'tank', '_unindexed_search': True})))
+>>> pp(list(Animal.members.values(criteria={'facility': 'tank', '_unindexed_search': True})))
 [{'species': 'clownfish',
   'name': 'Nemo',
   'description': 'Found at last',
@@ -354,9 +354,9 @@ results. This is because the default attributes for these methods is
 the value of Animal._attr_names, which does not include `facility`.
 
 Specific attributes for model.values() and model.values_list() may be
-provided via the `attr_names` parameter to those methods.
+provided by passing them as positional parameters to those methods.
 
->>> pp(list(Animal.values(attr_names=['species', 'domesticated', 'facility'])), width=40)
+>>> pp(list(Animal.members.values('species', 'domesticated', 'facility')), width=40)
 [{'species': 'unknown',
   'domesticated': True},
  {'species': 'irrelevant',
@@ -372,7 +372,7 @@ provided via the `attr_names` parameter to those methods.
   'domesticated': True,
   'facility': 'cage'}]
 >>>
->>> pp(list(Animal.values_list(attr_names=['name', 'description', 'facility'])))
+>>> pp(list(Animal.members.values_list('name', 'description', 'facility')))
 [('Spot', "Man's best friend"),
  ('Fluffy', "Man's gracious overlord"),
  ('Bambi', 'Likes to hide'),
@@ -388,7 +388,7 @@ results.
 Members that don't have ANY of the attributes are excluded from the
 results. In the following examples, notice the absence of FarmAnimal members.
 
->>> pp(list(Animal.values()))
+>>> pp(list(Animal.members.values()))
 [{'species': 'unknown',
   'name': 'Spot',
   'description': "Man's best friend",
@@ -414,7 +414,7 @@ results. In the following examples, notice the absence of FarmAnimal members.
   'description': 'The Golden One',
   'domesticated': True}]
 >>>
->>> pp(list(Animal.values_list()))
+>>> pp(list(Animal.members.values_list()))
 [('unknown', 'Spot', "Man's best friend", True),
  ('irrelevant', 'Fluffy', "Man's gracious overlord", True),
  ('whitetail', 'Bambi', 'Likes to hide', False),
@@ -427,7 +427,7 @@ The model.values_list() method can be passed the `flat=True` parameter
 to collapse the values in the result. This usually only makes sense
 when combined with limiting the results to a single attribute name.
 
->>> pp(list(Animal.values_list(attr_names=['name'], flat=True)))
+>>> pp(list(Animal.members.values_list('name', flat=True)))
 ['Spot', 'Fluffy', 'Bambi', 'Speedy', 'Nemo', 'Freddy']
 >>>
 
@@ -450,7 +450,7 @@ to walk the entire model tree.
 >>> def walk_submodels(model, indent=''):
 ...     print('{}Model:{}'.format(indent, model.__name__))
 ...     print('{}  Members:'.format(indent))
-...     for member in model.all():
+...     for member in model.members.all():
 ...         print('{}    {}'.format(indent, member._constant_name))
 ...     submodels = list(model.submodels())
 ...     if submodels:
@@ -572,18 +572,20 @@ class ConstantModelMeta(type):
 
             delattr(cls, raw_members_attr_name)
 
+        cls.members = ConstantModelMemberManager(cls)
+
         cls._populate_ancestors(cls)
 
     #
     # Public API
     #
-    class ConstantLookupError(Exception):
+    class ConstantModelError(Exception):
         pass
 
-    class DoesNotExist(ConstantLookupError):
+    class DoesNotExist(ConstantModelError):
         pass
 
-    class MultipleObjectsReturned(ConstantLookupError):
+    class MultipleObjectsReturned(ConstantModelError):
         pass
 
     def __repr__(cls):
@@ -657,110 +659,6 @@ class ConstantModelMeta(type):
     def remove_submodel(cls, submodel):
         del cls._submodels[submodel]
 
-    def all(cls):
-        return (instance for instance in cls._instances.by_id.values())
-
-    def filter(cls, **kwargs):
-        if bool(kwargs.pop('_unindexed_search', False)):
-            index_search_results = cls.all()
-        else:
-            index_search_results = cls._get_index_search_results(kwargs)
-
-        validated_result_ids = set()
-        for result in index_search_results:
-            for attr_name, attr_value in kwargs.items():
-                if (attr_name == ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME and
-                        cls._instances.by_constant_name.get(attr_value) is result):
-                    continue
-
-                try:
-                    value = getattr(result, attr_name)
-                except AttributeError:
-                    break
-
-                if value != attr_value:
-                    break
-
-            else:
-                result_id = id(result)
-                if result_id not in validated_result_ids:
-                    validated_result_ids.add(result_id)
-                    yield result
-
-        if not validated_result_ids:
-            raise cls._build_filter_error(kwargs)
-
-    def get(cls, _return_none=False, **kwargs):
-        try:
-            results = cls.filter(**kwargs)
-            result = next(results)
-        except cls.DoesNotExist:
-            if _return_none:
-                return None
-            else:
-                raise cls.DoesNotExist(
-                    '{}.get({}) yielded no objects.'.format(
-                        cls.__name__, _format_kwargs(kwargs)))
-
-        try:
-            next(results)
-        except StopIteration:
-            return result
-        else:
-            raise cls.MultipleObjectsReturned(
-                '{}.get({}) yielded multiple objects.'.format(
-                    cls.__name__, _format_kwargs(kwargs)))
-
-    def _values_base(cls, item_func, attr_names=None, criteria=None, allow_flat=False,
-                flat=False):
-        if attr_names is None:
-            attr_names = cls._attr_names
-
-        elif not frozenset(attr_names).issubset(frozenset(chain(
-                (ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME,
-                 ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME),
-                chain(cls.__dict__.keys(), cls._attr_names),
-                chain.from_iterable(chain(
-                    submodel.__dict__.keys(), submodel._attr_names)
-                        for submodel in cls.submodels())
-                ))):
-            raise ValueError(
-                "Parameter 'attr_names' is not a subset of available attribute names.")
-
-        if criteria is None:
-            results = cls.all()
-        else:
-            results = cls.filter(**criteria)
-
-        if allow_flat and flat:
-            for rendered_item in chain.from_iterable(
-                    item_func(item, attr_names) for item in results):
-                if rendered_item:
-                    yield rendered_item
-        else:
-            for item in results:
-                rendered_item = item_func(item, attr_names)
-                if rendered_item:
-                    yield rendered_item
-
-    def _values_item(item, attr_names):
-        rendered_item = []
-        for attr_name in attr_names:
-            attr_value = getattr(item, attr_name, None)
-            if attr_value is not None:
-                rendered_item.append((attr_name, attr_value))
-        return OrderedDict(rendered_item)
-    values = partialmethod(_values_base, _values_item)
-
-    def _values_list_item(item, attr_names):
-        rendered_item = []
-        for attr_name in attr_names:
-            attr_value = getattr(item, attr_name, None)
-            if attr_value is not None:
-                rendered_item.append(attr_value)
-        return tuple(rendered_item)
-    values_list = partialmethod(_values_base, _values_list_item, allow_flat=True)
-
     #
     # Private API
     #
@@ -775,7 +673,7 @@ class ConstantModelMeta(type):
             if isinstance(parent, mcs):
                 if parent is ConstantModel:
                     continue
-                for member in cls.all():
+                for member in cls._instances.by_id.values():
                     constant_name = getattr(
                         member, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, None)
                     if constant_name is not None:
@@ -844,10 +742,133 @@ class ConstantModelMeta(type):
                     for item in result:
                         yield item
 
-    def _build_filter_error(cls, kwargs):
-        return cls.DoesNotExist(
+
+class ConstantModelMemberManager:
+    """
+    Manager API for ConstantModel instances.
+
+    The .members attribute on each model class is an instance of this
+    class.
+    """
+
+    def __init__(self, model):
+        self.model = model
+
+    #
+    # Private API
+    #
+    def _values_base(self, item_func, *attr_names, criteria=None, allow_flat=False,
+                     flat=False):
+        if not attr_names:
+            attr_names = self.model._attr_names
+
+        elif not frozenset(attr_names).issubset(frozenset(chain(
+                (ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME,
+                 ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME),
+                chain(self.model.__dict__.keys(), self.model._attr_names),
+                chain.from_iterable(chain(
+                    submodel.__dict__.keys(), submodel._attr_names)
+                        for submodel in self.model.submodels())
+                ))):
+            raise ValueError(
+                "Attribute names must be a subset of those available.")
+
+        if criteria is None:
+            results = self.all()
+        else:
+            results = self.filter(**criteria)
+
+        if allow_flat and flat:
+            for rendered_item in chain.from_iterable(
+                    item_func(item, attr_names) for item in results):
+                if rendered_item:
+                    yield rendered_item
+        else:
+            for item in results:
+                rendered_item = item_func(item, attr_names)
+                if rendered_item:
+                    yield rendered_item
+
+    def _build_filter_error(self, kwargs):
+        return self.model.DoesNotExist(
             '{}.filter({}) yielded no objects.'.format(
-                cls.__name__, _format_kwargs(kwargs)))
+                self.model.__name__, _format_kwargs(kwargs)))
+
+    #
+    # Public API
+    #
+    def all(self):
+        return (instance for instance in self.model._instances.by_id.values())
+
+    def filter(self, **kwargs):
+        if bool(kwargs.pop('_unindexed_search', False)):
+            index_search_results = self.all()
+        else:
+            index_search_results = self.model._get_index_search_results(kwargs)
+
+        validated_result_ids = set()
+        for result in index_search_results:
+            for attr_name, attr_value in kwargs.items():
+                if (attr_name == ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME and
+                        self.model._instances.by_constant_name.get(
+                            attr_value) is result):
+                    continue
+
+                try:
+                    value = getattr(result, attr_name)
+                except AttributeError:
+                    break
+
+                if value != attr_value:
+                    break
+
+            else:
+                result_id = id(result)
+                if result_id not in validated_result_ids:
+                    validated_result_ids.add(result_id)
+                    yield result
+
+        if not validated_result_ids:
+            raise self._build_filter_error(kwargs)
+
+    def get(self, _return_none=False, **kwargs):
+        try:
+            results = self.filter(**kwargs)
+            result = next(results)
+        except self.model.DoesNotExist:
+            if _return_none:
+                return None
+            else:
+                raise self.model.DoesNotExist(
+                    '{}.get({}) yielded no objects.'.format(
+                        self.model.__name__, _format_kwargs(kwargs)))
+
+        try:
+            next(results)
+        except StopIteration:
+            return result
+        else:
+            raise self.model.MultipleObjectsReturned(
+                '{}.get({}) yielded multiple objects.'.format(
+                    self.model.__name__, _format_kwargs(kwargs)))
+
+    def _values_item(item, attr_names):
+        rendered_item = []
+        for attr_name in attr_names:
+            attr_value = getattr(item, attr_name, None)
+            if attr_value is not None:
+                rendered_item.append((attr_name, attr_value))
+        return OrderedDict(rendered_item)
+    values = partialmethod(_values_base, _values_item)
+
+    def _values_list_item(item, attr_names):
+        rendered_item = []
+        for attr_name in attr_names:
+            attr_value = getattr(item, attr_name, None)
+            if attr_value is not None:
+                rendered_item.append(attr_value)
+        return tuple(rendered_item)
+    values_list = partialmethod(_values_base, _values_list_item, allow_flat=True)
 
 
 class ConstantModel(metaclass=ConstantModelMeta):

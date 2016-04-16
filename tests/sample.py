@@ -88,9 +88,9 @@ class PERSON(OBJECT):
         ) if chunk)
 
     parent1 = property(
-        lambda self: self.__class__.get(code=self._parent1, _return_none=True))
+        lambda self: self.__class__.members.get(code=self._parent1, _return_none=True))
     parent2 = property(
-        lambda self: self.__class__.get(code=self._parent2, _return_none=True))
+        lambda self: self.__class__.members.get(code=self._parent2, _return_none=True))
 
     @property
     def parents(self):
@@ -98,20 +98,21 @@ class PERSON(OBJECT):
 
     @property
     def children(self):
-        return list(person for person in self.__class__.all() if
+        return list(person for person in self.__class__.members.all() if
                     person is not self and self in person.parents)
 
 
 class SampleTest(TestCase):
+    maxDiff = None
     # TODO: Increase test coverage
 
     def test_get(self):
-        result = PLACE.get(continent='Asia')
+        result = PLACE.members.get(continent='Asia')
         self.assertIs(result, PLACE.JERUSALEM)
 
     def test_filter(self):
         results = list(
-            obj.name for obj in OBJECT.filter(
+            obj.name for obj in OBJECT.members.filter(
                 __class__=THING, is_organic=True, _unindexed_search=True))
         self.assertEqual(results, [
             'Plant',
@@ -120,7 +121,7 @@ class SampleTest(TestCase):
 
     def test_values(self):
         places_east_of_geneva = list(
-            place for place in PLACE.values(attr_names=['name', 'gis_location'])
+            place for place in PLACE.members.values('name', 'gis_location')
             if place['gis_location'][1] > PLACE.GENEVA.gis_location[1])
         self.assertEqual(places_east_of_geneva, [{
             'name': 'Jerusalem',
@@ -131,7 +132,8 @@ class SampleTest(TestCase):
         }])
 
     def test_values_list(self):
-        descriptions = list(OBJECT.values_list(attr_names=['description'], flat=True))
+        descriptions = list(
+            OBJECT.members.values_list('description', flat=True))
         self.assertEqual(descriptions, [
             "OBJECT.WAR, id=1, code='war': War",
             "OBJECT.PEACE, id=2, code='peace': Peace",
