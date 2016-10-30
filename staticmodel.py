@@ -1,5 +1,5 @@
 """
-**ConstantModel** provides a simple framework for modeling complex
+**StaticModel** provides a simple framework for modeling complex
 *Statically Defined Objects*. These are objects that might otherwise
 be modeled using persistence technologies such as Django models, but
 that do not belong in the database.
@@ -35,7 +35,7 @@ it is highly likely that those changes should be subject to the same
 quality control processes as the rest of the code.
 
 ######################
-Why use ConstantModel?
+Why use StaticModel?
 ######################
 
 Say we wanted to create a small collection of objects that modeled
@@ -60,12 +60,12 @@ us to have all the functionality we want, the complexity has to go
 somewhere. We will have to find ways to remove it *from* our code, or
 spend a considerable amount of time managing it *in* our code.
 
-Enter ConstantModel.
+Enter StaticModel.
 
-ConstantModel is intended to simplify the creation of Statically
-Defined Objects. ConstantModel definitions declare member attribute
+StaticModel is intended to simplify the creation of Statically
+Defined Objects. StaticModel definitions declare member attribute
 names and member attribute values in a very concise manner. Members
-are instances of the model. The ConstantModel metaclass processes each
+are instances of the model. The StaticModel metaclass processes each
 model definition and provides each model with some special behavior.
 
 The following explanations and examples provide details about that
@@ -80,7 +80,7 @@ Models
 ******
 
 A model is defined using the class statement to create a sub-class
-of ConstantModel.
+of StaticModel.
 
 Member attribute names are declared with the `_attr_names` class
 attribute. The value should be a sequence of strings.
@@ -94,10 +94,10 @@ should work as expected, for the most part.
 
 >>> from pprint import pprint as pp
 >>>
->>> from constantmodel import ConstantModel
+>>> from staticmodel import StaticModel
 >>>
 >>>
->>> class Animal(ConstantModel):
+>>> class Animal(StaticModel):
 ...     _attr_names = 'species', 'name', 'description', 'domesticated'
 ...
 ...     DOG = 'unknown', 'Spot', "Man's best friend", True
@@ -135,19 +135,19 @@ should work as expected, for the most part.
 ...             submodel.model_talk(members_spoken=members_spoken)
 ...
 
-The entire collection of members can be retrieved with the :py:meth:`~ConstantModel.all` method.
+The entire collection of members can be retrieved with the :py:meth:`~StaticModel.all` method.
 
 >>> pp(list(Animal.members.all()))
 [<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
  <Animal.CAT: species='irrelevant', name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
 
- **NOTE:** These :py:class:`ConstantModel` methods return generators:
+ **NOTE:** These :py:class:`StaticModel` methods return generators:
 
-   - :py:meth:`~ConstantModel.members.all`
-   - :py:meth:`~ConstantModel.members.filter`
-   - :py:meth:`~ConstantModel.members.values`
-   - :py:meth:`~ConstantModel.members.values_list`
+   - :py:meth:`~StaticModel.members.all`
+   - :py:meth:`~StaticModel.members.filter`
+   - :py:meth:`~StaticModel.members.values`
+   - :py:meth:`~StaticModel.members.values_list`
 
  For demonstration purposes in all of these examples, we consume
  those generators with :py:func:`list`.
@@ -207,13 +207,13 @@ the sub-model instead of the parent model.
 Member access methods
 *********************
 
-A model member may be retrieved using the model's :py:meth:`~ConstantModel.get` method.
+A model member may be retrieved using the model's :py:meth:`~StaticModel.get` method.
 
 >>> Mammal.members.get(name='Bambi')
 <Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>
 >>>
 
-Model members may be filtered with the model's :py:meth:`~ConstantModel.filter` method.
+Model members may be filtered with the model's :py:meth:`~StaticModel.filter` method.
 
 >>> pp(list(Animal.members.filter(domesticated=True)))
 [<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
@@ -436,15 +436,15 @@ Polymorphism
 ************
 
 When each model is defined, it registers itself with its parent model.
-The sub-models of any model are available via the :py:meth:`~ConstantModel.submodels` method.
+The sub-models of any model are available via the :py:meth:`~StaticModel.submodels` method.
 
 >>> pp(list(Animal.submodels()))
-[<ConstantModel Mammal: Instances: 2, Indexes: ('species', 'name', 'description', 'domesticated')>,
- <ConstantModel HousePet: Instances: 2, Indexes: ('name', 'domesticated', 'facility')>,
- <ConstantModel FarmAnimal: Instances: 2, Indexes: ('food_provided', 'character', 'occupation', 'butcher_involved')>]
+[<StaticModel Mammal: Instances: 2, Indexes: ('species', 'name', 'description', 'domesticated')>,
+ <StaticModel HousePet: Instances: 2, Indexes: ('name', 'domesticated', 'facility')>,
+ <StaticModel FarmAnimal: Instances: 2, Indexes: ('food_provided', 'character', 'occupation', 'butcher_involved')>]
 >>>
 
-The following recursive function demonstrates using the :py:meth:`~ConstantModel.submodels` method
+The following recursive function demonstrates using the :py:meth:`~StaticModel.submodels` method
 to walk the entire model tree.
 
 >>> def walk_submodels(model, indent=''):
@@ -521,7 +521,7 @@ class ATTR_NAME:
         RAW_VALUE = '_raw_value'
 
 
-class ConstantModelMeta(type):
+class StaticModelMeta(type):
     @classmethod
     def __prepare__(mcs, name, bases, **kwargs):
         return OrderedDict()
@@ -572,24 +572,24 @@ class ConstantModelMeta(type):
 
             delattr(cls, raw_members_attr_name)
 
-        cls.members = ConstantModelMemberManager(cls)
+        cls.members = StaticModelMemberManager(cls)
 
         cls._populate_ancestors(cls)
 
     #
     # Public API
     #
-    class ConstantModelError(Exception):
+    class StaticModelError(Exception):
         pass
 
-    class DoesNotExist(ConstantModelError):
+    class DoesNotExist(StaticModelError):
         pass
 
-    class MultipleObjectsReturned(ConstantModelError):
+    class MultipleObjectsReturned(StaticModelError):
         pass
 
     def __repr__(cls):
-        return '<ConstantModel {}: Instances: {}, Indexes: {}>'.format(
+        return '<StaticModel {}: Instances: {}, Indexes: {}>'.format(
             cls.__name__, len(cls._instances.by_id), cls._index_attr_names)
 
     def __getattribute__(cls, item):
@@ -671,7 +671,7 @@ class ConstantModelMeta(type):
         mcs = cls.__class__
         for parent in child.__bases__:
             if isinstance(parent, mcs):
-                if parent is ConstantModel:
+                if parent is StaticModel:
                     continue
                 for member in cls._instances.by_id.values():
                     constant_name = getattr(
@@ -743,9 +743,9 @@ class ConstantModelMeta(type):
                         yield item
 
 
-class ConstantModelMemberManager:
+class StaticModelMemberManager:
     """
-    Manager API for ConstantModel instances.
+    Manager API for StaticModel instances.
 
     The .members attribute on each model class is an instance of this
     class.
@@ -871,7 +871,7 @@ class ConstantModelMemberManager:
     values_list = partialmethod(_values_base, _values_list_item, allow_flat=True)
 
 
-class ConstantModel(metaclass=ConstantModelMeta):
+class StaticModel(metaclass=StaticModelMeta):
     """
     Base class for constant models.
     """

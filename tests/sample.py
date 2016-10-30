@@ -1,9 +1,9 @@
 from unittest import TestCase
 
-from constantmodel import ConstantModel
+from staticmodel import StaticModel
 
 
-class OBJECT(ConstantModel):
+class OBJECT(StaticModel):
     _attr_names = 'id', 'code', 'name'
 
     WAR = 1, 'war', 'War'
