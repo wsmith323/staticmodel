@@ -1,79 +1,7 @@
 """
-**StaticModel** provides a simple framework for modeling complex
-*Statically Defined Objects*. These are objects that might otherwise
-be modeled using persistence technologies such as Django models, but
-that do not belong in the database.
-
-#######################################
-The case for Statically Defined Objects
-#######################################
-
-Often, portions of an application's data model are comprised of
-*fixture* data. These are usually small collections of objects that
-rarely change.
-
-Often these fixtures are *code-significant*. In other words, the code
-has knowledge about individual instances or groups of instances.
-
-When these fixtures are modeled using traditional persistence
-technologies, problems often arise. Keeping the persistently stored
-versions of the objects correct across development, testing, staging,
-and production environments becomes challenging.
-
-Very often, there is no business reason for these collections of
-objects to be in the database. The application users have no need
-to modify them. The application provides no facility *to* modify them.
-The hardware resources required to read them from persistent storage
-is just needless overhead.
-
-These objects are not really data at all. They are code. The only
-versions that need to exist are the static definitions in the code,
-and the instances in memory created by executing the code.
-
-Furthermore, when the object definitions *do* occasionally change,
-it is highly likely that those changes should be subject to the same
-quality control processes as the rest of the code.
-
-######################
-Why use StaticModel?
-######################
-
-Say we wanted to create a small collection of objects that modeled
-animals. Each object would have significance in our code. Users would
-not need to modify them. We now know that Statically Defined Objects
-make much more sense than persisting these to the database.
-
-These basic requirements could be satisfied using standard python
-language features such as Enum, SimpleNamespace, namedtuple,
-custom classes, etc.
-
-However, requirements often get more complex. Let us also assert that
-our animal objects will have multiple attributes. In addition, we need
-a shallow class hierarchy with some polymorphic methods. Enum,
-SimpleNamespace, and namedtuple just dropped out as contenders. We are
-now in custom class territory. Let us further assert that we need to be
-able to retrieve and filter these objects by their attribute values.
-The amount of complexity in those custom classes just went way up. Now,
-lets add the constraint that we desire code that is declarative,
-concise, and has a fairly high signal-to-noise ratio. Well, in order for
-us to have all the functionality we want, the complexity has to go
-somewhere. We will have to find ways to remove it *from* our code, or
-spend a considerable amount of time managing it *in* our code.
-
-Enter StaticModel.
-
-StaticModel is intended to simplify the creation of Statically
-Defined Objects. StaticModel definitions declare member attribute
-names and member attribute values in a very concise manner. Members
-are instances of the model. The StaticModel metaclass processes each
-model definition and provides each model with some special behavior.
-
-The following explanations and examples provide details about that
-behavior.
-
-##########
-The Basics
-##########
+**StaticModel** provides a simple framework for modeling objects that
+might otherwise be modeled using persistence technologies such as
+the Django ORM, but that do not belong in the database.
 
 ******
 Models
@@ -89,8 +17,7 @@ Members are declared with an uppercase class attribute. Member values
 should be sequences with the same number of items as the value of
 `_attr_names`.
 
-Models can contain anything normal classes can contain, and that code
-should work as expected, for the most part.
+Members are instances of the Model.
 
 >>> from pprint import pprint as pp
 >>>
@@ -98,48 +25,17 @@ should work as expected, for the most part.
 >>>
 >>>
 >>> class Animal(StaticModel):
-...     _attr_names = 'species', 'name', 'description', 'domesticated'
+...     _attr_names = 'name', 'description', 'domesticated'
 ...
-...     DOG = 'unknown', 'Spot', "Man's best friend", True
-...     CAT = 'irrelevant', 'Fluffy', "Man's gracious overlord", True
-...
-...     model_greeting = 'Greetings.'
-...     member_greeting = 'Hello.'
-...
-...     def member_talk(self, greeting=None):
-...         greeting = greeting or self.member_greeting
-...         print('{greeting} My name is {name}. Pleased to meet you.'.format(
-...             greeting=greeting, name=self.get_name()))
-...
-...     def get_name(self):
-...         return self.name
-...
-...     @classmethod
-...     def model_talk(cls, greeting=None, members_spoken=None):
-...         greeting = greeting or cls.model_greeting
-...         print('{greeting} We are {cls.__name__}s.'.format(greeting=greeting,
-...             cls=cls))
-...
-...         if members_spoken is None:
-...             members_spoken = set()
-...
-...         for member in cls.members.all():
-...             if member.__class__ is not cls:
-...                 continue
-...             member_id = id(member)
-...             if member_id not in members_spoken:
-...                 members_spoken.add(member_id)
-...                 member.member_talk()
-...
-...         for submodel in cls.submodels():
-...             submodel.model_talk(members_spoken=members_spoken)
-...
+...     DOG = 'Spot', "Man's best friend", True
+...     CAT = 'Fluffy', "Man's gracious overlord", True
+>>>
 
 The entire collection of members can be retrieved with the :py:meth:`~StaticModel.all` method.
 
 >>> pp(list(Animal.members.all()))
-[<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
- <Animal.CAT: species='irrelevant', name='Fluffy', description="Man's gracious overlord", domesticated=True>]
+[<Animal.DOG: name='Spot', description="Man's best friend", domesticated=True>,
+ <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
 
  **NOTE:** These :py:class:`StaticModel` methods return generators:
@@ -160,16 +56,17 @@ Models can have sub-models. Sub-models are created using normal
 sub-class semantics.
 
 >>> class Mammal(Animal):
-...     DEER = 'whitetail', 'Bambi', 'Likes to hide', False
-...     ANTELOPE = 'pronghorn', 'Speedy', 'Likes to run', False
+...     DEER = 'Bambi', 'Likes to hide', False
+...     ANTELOPE = 'Speedy', 'Likes to run', False
+>>>
 
-Sub-models **inherit the member attribute names** of their parent model.
+Sub-models **inherit the _attr_names attribute** of their parent model.
 
 >>> Mammal._attr_names
-('species', 'name', 'description', 'domesticated')
+('name', 'description', 'domesticated')
 >>>
 >>> Mammal.DEER
-<Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>
+<Mammal.DEER: name='Bambi', description='Likes to hide', domesticated=False>
 >>>
 
 However, sub-models **DO NOT inherit the members** of their parent model.
@@ -180,8 +77,8 @@ Traceback (most recent call last):
 AttributeError: 'Mammal' object has no attribute 'DOG'
 >>>
 >>> pp(list(Mammal.members.all()))
-[<Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>,
- <Mammal.ANTELOPE: species='pronghorn', name='Speedy', description='Likes to run', domesticated=False>]
+[<Mammal.DEER: name='Bambi', description='Likes to hide', domesticated=False>,
+ <Mammal.ANTELOPE: name='Speedy', description='Likes to run', domesticated=False>]
 >>>
 
 Parent models **gain the members** of their sub-models. Notice that the
@@ -189,10 +86,10 @@ Parent models **gain the members** of their sub-models. Notice that the
 **Mammal** sub-model.
 
 >>> pp(list(Animal.members.all()))
-[<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
- <Animal.CAT: species='irrelevant', name='Fluffy', description="Man's gracious overlord", domesticated=True>,
- <Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>,
- <Mammal.ANTELOPE: species='pronghorn', name='Speedy', description='Likes to run', domesticated=False>]
+[<Animal.DOG: name='Spot', description="Man's best friend", domesticated=True>,
+ <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>,
+ <Mammal.DEER: name='Bambi', description='Likes to hide', domesticated=False>,
+ <Mammal.ANTELOPE: name='Speedy', description='Likes to run', domesticated=False>]
 >>>
 
 The members that the parent has gained behave just like the members
@@ -200,7 +97,7 @@ that were defined in the parent model, except they are instances of
 the sub-model instead of the parent model.
 
 >>> Animal.DEER
-<Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>
+<Mammal.DEER: name='Bambi', description='Likes to hide', domesticated=False>
 >>>
 
 *********************
@@ -210,14 +107,14 @@ Member access methods
 A model member may be retrieved using the model's :py:meth:`~StaticModel.get` method.
 
 >>> Mammal.members.get(name='Bambi')
-<Mammal.DEER: species='whitetail', name='Bambi', description='Likes to hide', domesticated=False>
+<Mammal.DEER: name='Bambi', description='Likes to hide', domesticated=False>
 >>>
 
 Model members may be filtered with the model's :py:meth:`~StaticModel.filter` method.
 
 >>> pp(list(Animal.members.filter(domesticated=True)))
-[<Animal.DOG: species='unknown', name='Spot', description="Man's best friend", domesticated=True>,
- <Animal.CAT: species='irrelevant', name='Fluffy', description="Man's gracious overlord", domesticated=True>]
+[<Animal.DOG: name='Spot', description="Man's best friend", domesticated=True>,
+ <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
 
 Additional attribute names can be provided by overriding `_attr_names`
@@ -232,16 +129,10 @@ explicitly by overriding it's `_index_attr_names` attribute.
 
 >>> class HousePet(Animal):
 ...     _attr_names = Animal._attr_names + ('facility',)
-...     _index_attr_names = 'name', 'domesticated', 'facility'
+...     _index_attr_names = 'name', 'domesticated'
 ...
-...     FISH = 'clownfish', 'Nemo', 'Found at last', True, 'tank'
-...     RODENT = 'hamster', 'Freddy', 'The Golden One', True, 'cage'
-...
-...     def member_talk(self, greeting=None):
-...         super().member_talk(
-...             greeting=greeting or "Come in. Excuse the mess. My human hasn't cleaned"
-...                 " my {} in a while.".format(self.facility))
-...
+...     FISH = 'Nemo', 'Found at last', True, 'tank'
+...     RODENT = 'Freddy', 'The Golden One', True, 'cage'
 >>>
 
 Filtering a model with an attribute name that is not in its index
@@ -257,18 +148,18 @@ To force a non-indexed linear search over any and all attributes
 that exist on any model members, add the keyword argument
 `_unindexed_search=True` to the .filter() method.
 
->>> pp(list(HousePet.members.filter(species='clownfish', _unindexed_search=True)))
-[<HousePet.FISH: species='clownfish', name='Nemo', description='Found at last', domesticated=True, facility='tank'>]
+>>> pp(list(HousePet.members.filter(facility='tank', _unindexed_search=True)))
+[<HousePet.FISH: name='Nemo', description='Found at last', domesticated=True, facility='tank'>]
 >>>
 
 The name of the constant used on the model is automatically in the
 index and can be used in queries.
 
 >>> HousePet.members.get(_constant_name='FISH')
-<HousePet.FISH: species='clownfish', name='Nemo', description='Found at last', domesticated=True, facility='tank'>
+<HousePet.FISH: name='Nemo', description='Found at last', domesticated=True, facility='tank'>
 >>>
 >>> pp(list(Animal.members.filter(_constant_name='RODENT')))
-[<HousePet.RODENT: species='hamster', name='Freddy', description='The Golden One', domesticated=True, facility='cage'>]
+[<HousePet.RODENT: name='Freddy', description='The Golden One', domesticated=True, facility='cage'>]
 >>>
 
 Sub-models can provide completely different attribute names if desired.
@@ -280,25 +171,6 @@ values.
 ...     _index_attr_names = _attr_names
 ...     PIG = 'bacon', 'Porky Pig', "President, All Folks Actors Guild", True
 ...     CHICKEN = 'eggs', 'Chicken Little', 'Salesman, Falling Sky Insurance', False
-...
-...     model_greeting = 'Howdy!'
-...     member_greeting = 'Howdy!'
-...
-...     def member_talk(self, greeting=None):
-...         if self.butcher_involved:
-...             super().member_talk(greeting="Help! Save me! They are going to eat me!")
-...         else:
-...             super().member_talk(greeting=greeting)
-...
-...     @classmethod
-...     def model_talk(cls, greeting=None, members_spoken=None):
-...         super().model_talk(greeting=greeting, members_spoken=members_spoken)
-...         print("Well, we shur did 'njoy chewin' the fat for a spell.")
-...         print("Ya'll come back an' see us real soon now, ya hear!")
-...         print("(And don't pay Porky no mine. He always bin a bit of a drama queen.)")
-...
-...     def get_name(self):
-...         return self.character
 >>>
 
 =====================
@@ -308,27 +180,24 @@ Primitive Collections
 Model members may be rendered as primitive collections.
 
 >>> pp(list(HousePet.members.values()))
-[{'species': 'clownfish',
-  'name': 'Nemo',
+[{'name': 'Nemo',
   'description': 'Found at last',
   'domesticated': True,
   'facility': 'tank'},
- {'species': 'hamster',
-  'name': 'Freddy',
+ {'name': 'Freddy',
   'description': 'The Golden One',
   'domesticated': True,
   'facility': 'cage'}]
 >>>
 >>> pp(list(HousePet.members.values_list()))
-[('clownfish', 'Nemo', 'Found at last', True, 'tank'),
- ('hamster', 'Freddy', 'The Golden One', True, 'cage')]
+[('Nemo', 'Found at last', True, 'tank'),
+ ('Freddy', 'The Golden One', True, 'cage')]
 >>>
 
 The primitive collections may be filtered by providing criteria.
 
->>> pp(list(Animal.members.values(criteria={'species': 'hamster'})))
-[{'species': 'hamster',
-  'name': 'Freddy',
+>>> pp(list(Animal.members.values(criteria={'name': 'Freddy'})))
+[{'name': 'Freddy',
   'description': 'The Golden One',
   'domesticated': True}]
 >>>
@@ -342,8 +211,7 @@ Traceback (most recent call last):
 ValueError: Attribute 'facility' is not in the index.
 >>>
 >>> pp(list(Animal.members.values(criteria={'facility': 'tank', '_unindexed_search': True})))
-[{'species': 'clownfish',
-  'name': 'Nemo',
+[{'name': 'Nemo',
   'description': 'Found at last',
   'domesticated': True}]
 >>>
@@ -356,19 +224,19 @@ the value of Animal._attr_names, which does not include `facility`.
 Specific attributes for model.values() and model.values_list() may be
 provided by passing them as positional parameters to those methods.
 
->>> pp(list(Animal.members.values('species', 'domesticated', 'facility')), width=40)
-[{'species': 'unknown',
+>>> pp(list(Animal.members.values('name', 'domesticated', 'facility')), width=40)
+[{'name': 'Spot',
   'domesticated': True},
- {'species': 'irrelevant',
+ {'name': 'Fluffy',
   'domesticated': True},
- {'species': 'whitetail',
+ {'name': 'Bambi',
   'domesticated': False},
- {'species': 'pronghorn',
+ {'name': 'Speedy',
   'domesticated': False},
- {'species': 'clownfish',
+ {'name': 'Nemo',
   'domesticated': True,
   'facility': 'tank'},
- {'species': 'hamster',
+ {'name': 'Freddy',
   'domesticated': True,
   'facility': 'cage'}]
 >>>
@@ -389,38 +257,32 @@ Members that don't have ANY of the attributes are excluded from the
 results. In the following examples, notice the absence of FarmAnimal members.
 
 >>> pp(list(Animal.members.values()))
-[{'species': 'unknown',
-  'name': 'Spot',
+[{'name': 'Spot',
   'description': "Man's best friend",
   'domesticated': True},
- {'species': 'irrelevant',
-  'name': 'Fluffy',
+ {'name': 'Fluffy',
   'description': "Man's gracious overlord",
   'domesticated': True},
- {'species': 'whitetail',
-  'name': 'Bambi',
+ {'name': 'Bambi',
   'description': 'Likes to hide',
   'domesticated': False},
- {'species': 'pronghorn',
-  'name': 'Speedy',
+ {'name': 'Speedy',
   'description': 'Likes to run',
   'domesticated': False},
- {'species': 'clownfish',
-  'name': 'Nemo',
+ {'name': 'Nemo',
   'description': 'Found at last',
   'domesticated': True},
- {'species': 'hamster',
-  'name': 'Freddy',
+ {'name': 'Freddy',
   'description': 'The Golden One',
   'domesticated': True}]
 >>>
 >>> pp(list(Animal.members.values_list()))
-[('unknown', 'Spot', "Man's best friend", True),
- ('irrelevant', 'Fluffy', "Man's gracious overlord", True),
- ('whitetail', 'Bambi', 'Likes to hide', False),
- ('pronghorn', 'Speedy', 'Likes to run', False),
- ('clownfish', 'Nemo', 'Found at last', True),
- ('hamster', 'Freddy', 'The Golden One', True)]
+[('Spot', "Man's best friend", True),
+ ('Fluffy', "Man's gracious overlord", True),
+ ('Bambi', 'Likes to hide', False),
+ ('Speedy', 'Likes to run', False),
+ ('Nemo', 'Found at last', True),
+ ('Freddy', 'The Golden One', True)]
 >>>
 
 The model.values_list() method can be passed the `flat=True` parameter
@@ -429,80 +291,6 @@ when combined with limiting the results to a single attribute name.
 
 >>> pp(list(Animal.members.values_list('name', flat=True)))
 ['Spot', 'Fluffy', 'Bambi', 'Speedy', 'Nemo', 'Freddy']
->>>
-
-************
-Polymorphism
-************
-
-When each model is defined, it registers itself with its parent model.
-The sub-models of any model are available via the :py:meth:`~StaticModel.submodels` method.
-
->>> pp(list(Animal.submodels()))
-[<StaticModel Mammal: Instances: 2, Indexes: ('species', 'name', 'description', 'domesticated')>,
- <StaticModel HousePet: Instances: 2, Indexes: ('name', 'domesticated', 'facility')>,
- <StaticModel FarmAnimal: Instances: 2, Indexes: ('food_provided', 'character', 'occupation', 'butcher_involved')>]
->>>
-
-The following recursive function demonstrates using the :py:meth:`~StaticModel.submodels` method
-to walk the entire model tree.
-
->>> def walk_submodels(model, indent=''):
-...     print('{}Model:{}'.format(indent, model.__name__))
-...     print('{}  Members:'.format(indent))
-...     for member in model.members.all():
-...         print('{}    {}'.format(indent, member._constant_name))
-...     submodels = list(model.submodels())
-...     if submodels:
-...         print('{}  Sub-models:'.format(indent))
-...         new_indent = indent + '    '
-...         for submodel in submodels:
-...             walk_submodels(submodel, indent=new_indent)
-...
->>> walk_submodels(Animal)
-Model:Animal
-  Members:
-    DOG
-    CAT
-    DEER
-    ANTELOPE
-    FISH
-    RODENT
-    PIG
-    CHICKEN
-  Sub-models:
-    Model:Mammal
-      Members:
-        DEER
-        ANTELOPE
-    Model:HousePet
-      Members:
-        FISH
-        RODENT
-    Model:FarmAnimal
-      Members:
-        PIG
-        CHICKEN
->>>
-
-Finally, polymorphic methods work as expected.
-
->>> Animal.model_talk(greeting='Grrrreeeeetings.')
-Grrrreeeeetings. We are Animals.
-Hello. My name is Spot. Pleased to meet you.
-Hello. My name is Fluffy. Pleased to meet you.
-Greetings. We are Mammals.
-Hello. My name is Bambi. Pleased to meet you.
-Hello. My name is Speedy. Pleased to meet you.
-Greetings. We are HousePets.
-Come in. Excuse the mess. My human hasn't cleaned my tank in a while. My name is Nemo. Pleased to meet you.
-Come in. Excuse the mess. My human hasn't cleaned my cage in a while. My name is Freddy. Pleased to meet you.
-Howdy! We are FarmAnimals.
-Help! Save me! They are going to eat me! My name is Porky Pig. Pleased to meet you.
-Howdy! My name is Chicken Little. Pleased to meet you.
-Well, we shur did 'njoy chewin' the fat for a spell.
-Ya'll come back an' see us real soon now, ya hear!
-(And don't pay Porky no mine. He always bin a bit of a drama queen.)
 >>>
 """
 from collections import OrderedDict
