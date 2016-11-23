@@ -266,7 +266,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'constantmodel', 'Constant Model Documentation',
+    (master_doc, 'staticmodel', 'Static Model Documentation',
      [author], 1)
 ]
 
@@ -280,8 +280,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'ConstantModel', 'Constant Model Documentation',
-     author, 'ConstantModel', 'One line description of project.',
+    (master_doc, 'StaticModel', 'Static Model Documentation',
+     author, 'StaticModel', 'One line description of project.',
      'Miscellaneous'),
 ]
 
