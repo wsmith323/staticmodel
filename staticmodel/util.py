@@ -1,6 +1,8 @@
-from __future__ import print_function, unicode_literals
-
 import json
+
+
+def format_kwargs(kwargs):
+    return ', '.join('{}={!r}'.format(k, v) for k, v in kwargs.items())
 
 
 def jsonify(obj):
