@@ -19,7 +19,7 @@ class OBJECT(StaticModel):
     @property
     def description(self):
         return '{}.{}, id={}, code={!r}: {}'.format(
-            self.__class__.__name__, self._constant_name, self.id,
+            self.__class__.__name__, self._member_name, self.id,
             self.code, self.label(self.name))
 
 

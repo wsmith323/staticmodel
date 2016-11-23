@@ -155,13 +155,13 @@ that exist on any model members, add the keyword argument
 [<HousePet.FISH: name='Nemo', description='Found at last', domesticated=True, facility='tank'>]
 >>>
 
-The name of the constant used on the model is automatically in the
+The name of the member used on the model is automatically in the
 index and can be used in queries.
 
->>> HousePet.members.get(_constant_name='FISH')
+>>> HousePet.members.get(_member_name='FISH')
 <HousePet.FISH: name='Nemo', description='Found at last', domesticated=True, facility='tank'>
 >>>
->>> pp(list(Animal.members.filter(_constant_name='RODENT')))
+>>> pp(list(Animal.members.filter(_member_name='RODENT')))
 [<HousePet.RODENT: name='Freddy', description='The Golden One', domesticated=True, facility='cage'>]
 >>>
 
@@ -424,7 +424,7 @@ class ATTR_NAME:
         ATTR_NAMES = '_attr_names'
         INDEX_ATTR_NAMES = '_index_attr_names'
     class INSTANCE_VAR:
-        CONSTANT_NAME = '_constant_name'
+        MEMBER_NAME = '_member_name'
         RAW_VALUE = '_raw_value'
 
 
@@ -464,7 +464,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
 
         cls._submodels = OrderedDict()
         cls._instances = SimpleNamespace(
-            by_id=OrderedDict(), by_constant_name=OrderedDict())
+            by_id=OrderedDict(), by_member_name=OrderedDict())
         cls._indexes = {}
 
         # Now that the class has been created and initialized
@@ -526,20 +526,20 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                 instance = value
                 cls._process_new_instance(key, instance)
             else:
-                instance = cls(raw_value=value, constant_name=key)
+                instance = cls(raw_value=value, member_name=key)
 
             super(StaticModelMeta, cls).__setattr__(key, instance)
 
     def __call__(
-            cls, raw_value=None, constant_name=None, attr_names=None, *attr_values,
+            cls, raw_value=None, member_name=None, attr_names=None, *attr_values,
             **kwargs):
         if attr_values and raw_value:
             raise ValueError("Positional and 'raw_value' parameters are mutually"
                              " exclusive")
 
-        if constant_name is not None and constant_name.upper() != constant_name:
+        if member_name is not None and member_name.upper() != member_name:
             raise ValueError(
-                "Value for 'constant_name' parameter must be all uppercase.")
+                "Value for 'member_name' parameter must be all uppercase.")
 
         if raw_value and isinstance(raw_value, Iterable) and not isinstance(
                 raw_value, str):
@@ -553,7 +553,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
 
         setattr(instance, ATTR_NAME.INSTANCE_VAR.RAW_VALUE, raw_value)
 
-        cls._process_new_instance(constant_name, instance)
+        cls._process_new_instance(member_name, instance)
 
         return instance
 
@@ -581,25 +581,25 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                 if parent is StaticModel:
                     continue
                 for member in cls._instances.by_id.values():
-                    constant_name = getattr(
-                        member, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, None)
-                    if constant_name is not None:
-                        setattr(parent, constant_name, member)
+                    member_name = getattr(
+                        member, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, None)
+                    if member_name is not None:
+                        setattr(parent, member_name, member)
                 parent.register_submodel(cls)
                 cls._populate_ancestors(parent)
 
-    def _process_new_instance(cls, constant_name, instance):
-        instance_cn = getattr(instance, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, None)
-        if instance_cn and constant_name and instance_cn != constant_name:
+    def _process_new_instance(cls, member_name, instance):
+        instance_cn = getattr(instance, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, None)
+        if instance_cn and member_name and instance_cn != member_name:
             raise ValueError(
-                'Constant value {!r} already has a constant name'.format(
+                'Constant value {!r} already has a member name'.format(
                     instance))
 
-        setattr(instance, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME, constant_name)
+        setattr(instance, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, member_name)
 
         cls._instances.by_id[id(instance)] = instance
-        if constant_name is not None:
-            cls._instances.by_constant_name[constant_name] = instance
+        if member_name is not None:
+            cls._instances.by_member_name[member_name] = instance
         cls._index_instance(instance)
 
     def _index_instance(cls, instance):
@@ -622,15 +622,15 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         return str(obj)
 
     def _get_index_search_results(cls, kwargs):
-        # Make sure ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME gets processed
+        # Make sure ATTR_NAME.INSTANCE_VAR.MEMBER_NAME gets processed
         # first if it is present. There is no point in hitting the
         # other indexes if we miss there.
         sorted_kwargs = sorted(
-            kwargs.items(), key=lambda x: x[0] != ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME)
+            kwargs.items(), key=lambda x: x[0] != ATTR_NAME.INSTANCE_VAR.MEMBER_NAME)
 
         for attr_name, attr_value in sorted_kwargs:
-            if attr_name == ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME:
-                index = cls._instances.by_constant_name
+            if attr_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME:
+                index = cls._instances.by_member_name
                 try:
                     result = index[attr_value]
                 except KeyError:
@@ -665,7 +665,7 @@ class StaticModelMemberManager:
     # Private API
     #
     def _values_base(self, item_func, *attr_names, **kwargs):
-        criteria = kwargs.pop('criteria', None)
+        criteria = kwargs.pop('criteria', {})
         allow_flat = kwargs.pop('allow_flat', False)
         flat = kwargs.pop('flat', False)
 
@@ -673,8 +673,8 @@ class StaticModelMemberManager:
             attr_names = self.model._attr_names
 
         elif not frozenset(attr_names).issubset(frozenset(chain(
-                (ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME,
-                 ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME),
+                (ATTR_NAME.INSTANCE_VAR.MEMBER_NAME,
+                 ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
                 chain(self.model.__dict__.keys(), self.model._attr_names),
                 chain.from_iterable(chain(
                     submodel.__dict__.keys(), submodel._attr_names)
@@ -683,7 +683,7 @@ class StaticModelMemberManager:
             raise ValueError(
                 "Attribute names must be a subset of those available.")
 
-        if criteria is None:
+        if not criteria:
             results = self.all()
         else:
             results = self.filter(**criteria)
@@ -719,8 +719,8 @@ class StaticModelMemberManager:
         validated_result_ids = set()
         for result in index_search_results:
             for attr_name, attr_value in kwargs.items():
-                if (attr_name == ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME and
-                        self.model._instances.by_constant_name.get(
+                if (attr_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME and
+                        self.model._instances.by_member_name.get(
                             attr_value) is result):
                     continue
 
@@ -788,7 +788,7 @@ class StaticModel(six.with_metaclass(StaticModelMeta)):
     def __repr__(self):
         return '<{}.{}: {}>'.format(
             self.__class__.__name__,
-            getattr(self, ATTR_NAME.INSTANCE_VAR.CONSTANT_NAME),
+            getattr(self, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
             _format_kwargs(OrderedDict(
                 (attr_name, getattr(self, attr_name, None))
                 for attr_name in self._attr_names)),
