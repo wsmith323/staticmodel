@@ -31,7 +31,7 @@ Members are instances of the Model.
 ...     CAT = 'Fluffy', "Man's gracious overlord", True
 >>>
 
-The entire collection of members can be retrieved with the :py:meth:`~StaticModel.all` method.
+The entire collection of members can be retrieved with the :py:meth:`members.all` method.
 
 >>> from pprint import pprint as pp
 >>>
@@ -41,7 +41,7 @@ The entire collection of members can be retrieved with the :py:meth:`~StaticMode
  <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
 
- **NOTE:** These :py:class:`StaticModel` methods return generators:
+ **NOTE:** These :py:class:`StaticModel.members` methods return generators:
 
    - :py:meth:`~StaticModel.members.all`
    - :py:meth:`~StaticModel.members.filter`
@@ -107,13 +107,13 @@ the sub-model instead of the parent model.
 Member access methods
 *********************
 
-A model member may be retrieved using the model's :py:meth:`~StaticModel.get` method.
+A model member may be retrieved using the model's :py:meth:`members.get` method.
 
 >>> Mammal.members.get(name='Bambi')
 <Mammal.DEER: name='Bambi', description='Likes to hide', domesticated=False>
 >>>
 
-Model members may be filtered with the model's :py:meth:`~StaticModel.filter` method.
+Model members may be filtered with the model's :py:meth:`members.filter` method.
 
 >>> pp(list(Animal.members.filter(domesticated=True)))
 [<Animal.DOG: name='Spot', description="Man's best friend", domesticated=True>,
