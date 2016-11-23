@@ -23,7 +23,7 @@ class Prepareable(type):
                     cls.__prepare__
                 except AttributeError:
                     return constructor(cls, name, bases, attributes)
-                namespace = cls.__prepare__.im_func(name, bases)
+                namespace = cls.__prepare__(name, bases)
                 defining_frame = sys._getframe(1)
                 for constant in reversed(defining_frame.f_code.co_consts):
                     if inspect.iscode(constant) and constant.co_name == name:
@@ -33,6 +33,9 @@ class Prepareable(type):
                             except ValueError:
                                 return 0
                         break
+                else:
+                    return constructor(cls, name, bases, attributes)
+
                 by_appearance = sorted(
                     attributes.items(), key=lambda item: get_index(item[0])
                 )
