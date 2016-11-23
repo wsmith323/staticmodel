@@ -19,7 +19,7 @@ should be sequences with the same number of items as the value of
 
 Members are instances of the Model.
 
->>> from pprint import pprint as pp
+>>> from __future__ import absolute_import
 >>>
 >>> from staticmodel import StaticModel
 >>>
@@ -33,6 +33,9 @@ Members are instances of the Model.
 
 The entire collection of members can be retrieved with the :py:meth:`~StaticModel.all` method.
 
+>>> from pprint import pprint as pp
+>>>
+>>>
 >>> pp(list(Animal.members.all()))
 [<Animal.DOG: name='Spot', description="Man's best friend", domesticated=True>,
  <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>]
@@ -179,41 +182,71 @@ Primitive Collections
 
 Model members may be rendered as primitive collections.
 
->>> pp(list(HousePet.members.values()))
-[{'name': 'Nemo',
-  'description': 'Found at last',
-  'domesticated': True,
-  'facility': 'tank'},
- {'name': 'Freddy',
-  'description': 'The Golden One',
-  'domesticated': True,
-  'facility': 'cage'}]
+>>> # Custom function for formatting primitive collections in doctest
+>>> from jsonify import jsonify
 >>>
->>> pp(list(HousePet.members.values_list()))
-[('Nemo', 'Found at last', True, 'tank'),
- ('Freddy', 'The Golden One', True, 'cage')]
+>>>
+>>> jsonify(list(HousePet.members.values()))
+[
+  {
+    "name": "Nemo",
+    "description": "Found at last",
+    "domesticated": true,
+    "facility": "tank"
+  },
+  {
+    "name": "Freddy",
+    "description": "The Golden One",
+    "domesticated": true,
+    "facility": "cage"
+  }
+]
+>>>
+>>> jsonify(list(HousePet.members.values_list()))
+[
+  [
+    "Nemo",
+    "Found at last",
+    true,
+    "tank"
+  ],
+  [
+    "Freddy",
+    "The Golden One",
+    true,
+    "cage"
+  ]
+]
 >>>
 
 The primitive collections may be filtered by providing criteria.
 
->>> pp(list(Animal.members.values(criteria={'name': 'Freddy'})))
-[{'name': 'Freddy',
-  'description': 'The Golden One',
-  'domesticated': True}]
+>>> jsonify(list(Animal.members.values(criteria={'name': 'Freddy'})))
+[
+  {
+    "name": "Freddy",
+    "description": "The Golden One",
+    "domesticated": true
+  }
+]
 >>>
 
 The same rules apply for `criteria` as for .filter() with regards to
 attributes in the index.
 
->>> pp(list(Animal.members.values(criteria={'facility': 'tank'})))
+>>> jsonify(list(Animal.members.values(criteria={'facility': 'tank'})))
 Traceback (most recent call last):
     ...
 ValueError: Attribute 'facility' is not in the index.
 >>>
->>> pp(list(Animal.members.values(criteria={'facility': 'tank', '_unindexed_search': True})))
-[{'name': 'Nemo',
-  'description': 'Found at last',
-  'domesticated': True}]
+>>> jsonify(list(Animal.members.values(criteria={'facility': 'tank', '_unindexed_search': True})))
+[
+  {
+    "name": "Nemo",
+    "description": "Found at last",
+    "domesticated": true
+  }
+]
 >>>
 
 Notice that when the `Animal` model was used to execute .values() or
@@ -224,29 +257,65 @@ the value of Animal._attr_names, which does not include `facility`.
 Specific attributes for model.values() and model.values_list() may be
 provided by passing them as positional parameters to those methods.
 
->>> pp(list(Animal.members.values('name', 'domesticated', 'facility')), width=40)
-[{'name': 'Spot',
-  'domesticated': True},
- {'name': 'Fluffy',
-  'domesticated': True},
- {'name': 'Bambi',
-  'domesticated': False},
- {'name': 'Speedy',
-  'domesticated': False},
- {'name': 'Nemo',
-  'domesticated': True,
-  'facility': 'tank'},
- {'name': 'Freddy',
-  'domesticated': True,
-  'facility': 'cage'}]
+>>> jsonify(list(Animal.members.values('name', 'domesticated', 'facility')))
+[
+  {
+    "name": "Spot",
+    "domesticated": true
+  },
+  {
+    "name": "Fluffy",
+    "domesticated": true
+  },
+  {
+    "name": "Bambi",
+    "domesticated": false
+  },
+  {
+    "name": "Speedy",
+    "domesticated": false
+  },
+  {
+    "name": "Nemo",
+    "domesticated": true,
+    "facility": "tank"
+  },
+  {
+    "name": "Freddy",
+    "domesticated": true,
+    "facility": "cage"
+  }
+]
 >>>
->>> pp(list(Animal.members.values_list('name', 'description', 'facility')))
-[('Spot', "Man's best friend"),
- ('Fluffy', "Man's gracious overlord"),
- ('Bambi', 'Likes to hide'),
- ('Speedy', 'Likes to run'),
- ('Nemo', 'Found at last', 'tank'),
- ('Freddy', 'The Golden One', 'cage')]
+>>> jsonify(list(Animal.members.values_list('name', 'description', 'facility')))
+[
+  [
+    "Spot",
+    "Man's best friend"
+  ],
+  [
+    "Fluffy",
+    "Man's gracious overlord"
+  ],
+  [
+    "Bambi",
+    "Likes to hide"
+  ],
+  [
+    "Speedy",
+    "Likes to run"
+  ],
+  [
+    "Nemo",
+    "Found at last",
+    "tank"
+  ],
+  [
+    "Freddy",
+    "The Golden One",
+    "cage"
+  ]
+]
 >>>
 
 Notice that some members have the `facility` attribute and some don't,
@@ -256,48 +325,98 @@ results.
 Members that don't have ANY of the attributes are excluded from the
 results. In the following examples, notice the absence of FarmAnimal members.
 
->>> pp(list(Animal.members.values()))
-[{'name': 'Spot',
-  'description': "Man's best friend",
-  'domesticated': True},
- {'name': 'Fluffy',
-  'description': "Man's gracious overlord",
-  'domesticated': True},
- {'name': 'Bambi',
-  'description': 'Likes to hide',
-  'domesticated': False},
- {'name': 'Speedy',
-  'description': 'Likes to run',
-  'domesticated': False},
- {'name': 'Nemo',
-  'description': 'Found at last',
-  'domesticated': True},
- {'name': 'Freddy',
-  'description': 'The Golden One',
-  'domesticated': True}]
+>>> jsonify(list(Animal.members.values()))
+[
+  {
+    "name": "Spot",
+    "description": "Man's best friend",
+    "domesticated": true
+  },
+  {
+    "name": "Fluffy",
+    "description": "Man's gracious overlord",
+    "domesticated": true
+  },
+  {
+    "name": "Bambi",
+    "description": "Likes to hide",
+    "domesticated": false
+  },
+  {
+    "name": "Speedy",
+    "description": "Likes to run",
+    "domesticated": false
+  },
+  {
+    "name": "Nemo",
+    "description": "Found at last",
+    "domesticated": true
+  },
+  {
+    "name": "Freddy",
+    "description": "The Golden One",
+    "domesticated": true
+  }
+]
 >>>
->>> pp(list(Animal.members.values_list()))
-[('Spot', "Man's best friend", True),
- ('Fluffy', "Man's gracious overlord", True),
- ('Bambi', 'Likes to hide', False),
- ('Speedy', 'Likes to run', False),
- ('Nemo', 'Found at last', True),
- ('Freddy', 'The Golden One', True)]
+>>> jsonify(list(Animal.members.values_list()))
+[
+  [
+    "Spot",
+    "Man's best friend",
+    true
+  ],
+  [
+    "Fluffy",
+    "Man's gracious overlord",
+    true
+  ],
+  [
+    "Bambi",
+    "Likes to hide",
+    false
+  ],
+  [
+    "Speedy",
+    "Likes to run",
+    false
+  ],
+  [
+    "Nemo",
+    "Found at last",
+    true
+  ],
+  [
+    "Freddy",
+    "The Golden One",
+    true
+  ]
+]
 >>>
 
 The model.values_list() method can be passed the `flat=True` parameter
 to collapse the values in the result. This usually only makes sense
 when combined with limiting the results to a single attribute name.
 
->>> pp(list(Animal.members.values_list('name', flat=True)))
-['Spot', 'Fluffy', 'Bambi', 'Speedy', 'Nemo', 'Freddy']
+>>> jsonify(list(Animal.members.values_list('name', flat=True)))
+[
+  "Spot",
+  "Fluffy",
+  "Bambi",
+  "Speedy",
+  "Nemo",
+  "Freddy"
+]
 >>>
 """
-from collections import OrderedDict
-from collections.abc import Iterable
-from functools import partialmethod
+import six
+
+from collections import Iterable, OrderedDict
+from compat2.partialmethod import partialmethod
 from itertools import chain
-from types import SimpleNamespace
+from compat2.simplenamespace import SimpleNamespace
+
+from compat2.preparable import Prepareable
 
 
 class ATTR_NAME:
@@ -309,7 +428,7 @@ class ATTR_NAME:
         RAW_VALUE = '_raw_value'
 
 
-class StaticModelMeta(type):
+class StaticModelMeta(six.with_metaclass(Prepareable, type)):
     @classmethod
     def __prepare__(mcs, name, bases, **kwargs):
         return OrderedDict()
@@ -330,7 +449,7 @@ class StaticModelMeta(type):
 
         attrs['_{}__raw_members'.format(name)] = raw_members
 
-        return super().__new__(mcs, name, bases, attrs)
+        return super(StaticModelMeta, mcs).__new__(mcs, name, bases, attrs)
 
     def __init__(cls, *args, **kwargs):
         attr_names = tuple(getattr(cls, ATTR_NAME.CLASS_VAR.ATTR_NAMES, ()))
@@ -341,7 +460,7 @@ class StaticModelMeta(type):
         setattr(cls, ATTR_NAME.CLASS_VAR.ATTR_NAMES, attr_names)
         setattr(cls, ATTR_NAME.CLASS_VAR.INDEX_ATTR_NAMES, index_attr_names)
 
-        super().__init__(*args, **kwargs)
+        super(StaticModelMeta, cls).__init__(*args, **kwargs)
 
         cls._submodels = OrderedDict()
         cls._instances = SimpleNamespace(
@@ -389,11 +508,11 @@ class StaticModelMeta(type):
                 raise AttributeError('{!r} object has no attribute {!r}'.format(
                     cls.__name__, item))
         else:
-            return super().__getattribute__(item)
+            return super(StaticModelMeta, cls).__getattribute__(item)
 
     def __setattr__(cls, key, value):
         if key.startswith('_') or key != key.upper():
-            super().__setattr__(key, value)
+            super(StaticModelMeta, cls).__setattr__(key, value)
         else:
             try:
                 existing_value = getattr(cls, key)
@@ -409,10 +528,10 @@ class StaticModelMeta(type):
             else:
                 instance = cls(raw_value=value, constant_name=key)
 
-            super().__setattr__(key, instance)
+            super(StaticModelMeta, cls).__setattr__(key, instance)
 
     def __call__(
-            cls, *attr_values, raw_value=None, constant_name=None, attr_names=None,
+            cls, raw_value=None, constant_name=None, attr_names=None, *attr_values,
             **kwargs):
         if attr_values and raw_value:
             raise ValueError("Positional and 'raw_value' parameters are mutually"
@@ -426,7 +545,7 @@ class StaticModelMeta(type):
                 raw_value, str):
             attr_values = raw_value
 
-        instance = super().__call__()
+        instance = super(StaticModelMeta, cls).__call__()
 
         attr_names = attr_names or cls._attr_names or tuple(
             'value{}'.format(i) for i in range(len(attr_values)))
@@ -545,8 +664,11 @@ class StaticModelMemberManager:
     #
     # Private API
     #
-    def _values_base(self, item_func, *attr_names, criteria=None, allow_flat=False,
-                     flat=False):
+    def _values_base(self, item_func, *attr_names, **kwargs):
+        criteria = kwargs.pop('criteria', None)
+        allow_flat = kwargs.pop('allow_flat', False)
+        flat = kwargs.pop('flat', False)
+
         if not attr_names:
             attr_names = self.model._attr_names
 
@@ -659,7 +781,7 @@ class StaticModelMemberManager:
     values_list = partialmethod(_values_base, _values_list_item, allow_flat=True)
 
 
-class StaticModel(metaclass=StaticModelMeta):
+class StaticModel(six.with_metaclass(StaticModelMeta)):
     """
     Base class for constant models.
     """

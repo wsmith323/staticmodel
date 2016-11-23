@@ -15,7 +15,7 @@ setup(
     name="staticmodel",
     version=__version__,
     packages=find_packages(),
-    install_requires=[],
+    install_requires=['six'],
     author="Warren A. Smith",
     author_email="warren@wandrsmith.net",
     description="Static Models.",
