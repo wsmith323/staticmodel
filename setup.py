@@ -12,16 +12,16 @@ def file_read(filename):
 
 
 setup(
-    name="constantmodel",
+    name="staticmodel",
     version=__version__,
     packages=find_packages(),
     install_requires=[],
     author="Warren A. Smith",
     author_email="warren@wandrsmith.net",
-    description="Constant classes with model features.",
+    description="Static Models.",
     long_description=file_read("README.md"),
     license="MIT",
-    keywords="constant model enum",
-    url="https://github.com/wsmith323/constantmodel",
+    keywords="static constant model enum",
+    url="https://github.com/wsmith323/staticmodel",
     test_suite="tests",
 )
