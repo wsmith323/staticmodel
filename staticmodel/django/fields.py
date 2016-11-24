@@ -21,6 +21,19 @@ class StaticModelFieldMixin(object):
 
         super(StaticModelFieldMixin, self).__init__(*args, **kwargs)
 
+    def deconstruct(self):
+        name, path, args, kwargs = super(StaticModelFieldMixin, self).deconstruct()
+
+        kwargs.update(dict(
+            static_model=self._static_model,
+            value_field_name=self._value_field_name,
+            display_field_name=self._display_field_name,
+        ))
+
+        del kwargs["choices"]
+
+        return name, path, args, kwargs
+
     def _validate_values(self):
         for member in self._static_model.members.all():
             value = getattr(member, self._value_field_name)
