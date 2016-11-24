@@ -13,6 +13,12 @@ import six
 
 
 class Prepareable(type):
+    """
+    Make python 2 metaclasses use the __prepare__ method.
+
+    Should be set as the metaclass of the metaclass that contains the
+    __prepare__ method.
+    """
     if not six.PY3:
         def __new__(cls, name, bases, attributes):
             try:
