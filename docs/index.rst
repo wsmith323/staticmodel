@@ -11,9 +11,6 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-staticmodel Module
-====================
-
 .. automodule:: staticmodel
     :members:
     :undoc-members:
