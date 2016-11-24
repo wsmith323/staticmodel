@@ -112,8 +112,7 @@ class SampleTest(TestCase):
 
     def test_filter(self):
         results = list(
-            obj.name for obj in OBJECT.members.filter(
-                __class__=THING, is_organic=True, _unindexed_search=True))
+            obj.name for obj in THING.members.filter(is_organic=True))
         self.assertEqual(results, [
             'Plant',
             'Animal',

@@ -12,7 +12,6 @@ from .util import format_kwargs
 class ATTR_NAME:
     class CLASS_VAR:
         ATTR_NAMES = '_attr_names'
-        INDEX_ATTR_NAMES = '_index_attr_names'
     class INSTANCE_VAR:
         MEMBER_NAME = '_member_name'
         RAW_VALUE = '_raw_value'
@@ -42,14 +41,6 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         return super(StaticModelMeta, mcs).__new__(mcs, name, bases, attrs)
 
     def __init__(cls, *args, **kwargs):
-        attr_names = tuple(getattr(cls, ATTR_NAME.CLASS_VAR.ATTR_NAMES, ()))
-
-        index_attr_names = tuple(getattr(
-            cls, ATTR_NAME.CLASS_VAR.INDEX_ATTR_NAMES, ())) or attr_names
-
-        setattr(cls, ATTR_NAME.CLASS_VAR.ATTR_NAMES, attr_names)
-        setattr(cls, ATTR_NAME.CLASS_VAR.INDEX_ATTR_NAMES, index_attr_names)
-
         super(StaticModelMeta, cls).__init__(*args, **kwargs)
 
         cls._submodels = OrderedDict()
@@ -86,8 +77,8 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         pass
 
     def __repr__(cls):
-        return '<StaticModel {}: Instances: {}, Indexes: {}>'.format(
-            cls.__name__, len(cls._instances.by_id), cls._index_attr_names)
+        return '<StaticModel {}: Instances: {}, Attributes: {}>'.format(
+            cls.__name__, len(cls._instances.by_id), cls._attr_names)
 
     def __getattribute__(cls, item):
         item = str(item)
@@ -193,7 +184,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         cls._index_instance(instance)
 
     def _index_instance(cls, instance):
-        for index_attr in (ATTR_NAME.INSTANCE_VAR.RAW_VALUE, ) + cls._index_attr_names:
+        for index_attr in (ATTR_NAME.INSTANCE_VAR.RAW_VALUE, ) + cls._attr_names:
             index = cls._indexes.setdefault(index_attr, OrderedDict())
             try:
                 value = getattr(instance, index_attr)
@@ -233,7 +224,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                     index = cls._indexes[attr_name]
                 except KeyError:
                     raise ValueError(
-                        'Attribute {!r} is not in the index.'.format(attr_name))
+                        'Invalid attribute {!r}'.format(attr_name))
                 else:
                     result = index.get(cls._index_key_for_value(attr_value), [])
                     for item in result:
@@ -301,10 +292,7 @@ class StaticModelMemberManager:
         return (instance for instance in self.model._instances.by_id.values())
 
     def filter(self, **kwargs):
-        if bool(kwargs.pop('_unindexed_search', False)):
-            index_search_results = self.all()
-        else:
-            index_search_results = self.model._get_index_search_results(kwargs)
+        index_search_results = self.model._get_index_search_results(kwargs)
 
         validated_result_ids = set()
         for result in index_search_results:
@@ -383,5 +371,3 @@ class StaticModel(six.with_metaclass(StaticModelMeta)):
                 (attr_name, getattr(self, attr_name, None))
                 for attr_name in self._attr_names)),
         )
-
-
