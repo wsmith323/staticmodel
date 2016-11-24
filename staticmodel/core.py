@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from collections import Iterable, OrderedDict
 from itertools import chain
 

@@ -3,9 +3,11 @@ Use __prepare__ in Python 2 metaclasses.
 
 Adapted from https://gist.github.com/DasIch/5562625
 """
-import sys
-import inspect
+from __future__ import unicode_literals
+
 from functools import wraps
+import inspect
+import sys
 
 import six
 
