@@ -231,7 +231,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                         yield item
 
 
-class StaticModelMemberManager:
+class StaticModelMemberManager(object):
     """
     Manager API for StaticModel instances.
 
@@ -359,9 +359,9 @@ class StaticModelMemberManager:
     values_list = partialmethod(_values_base, _values_list_item, allow_flat=True)
 
 
-class StaticModel(six.with_metaclass(StaticModelMeta)):
+class StaticModel(six.with_metaclass(StaticModelMeta), object):
     """
-    Base class for constant models.
+    Base class for static models.
     """
     def __repr__(self):
         return '<{}.{}: {}>'.format(
