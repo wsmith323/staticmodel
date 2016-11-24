@@ -1,5 +1,9 @@
 """
-**StaticModel** provides a simple framework for modeling objects that
+********
+Overview
+********
+
+**Static Model** provides a simple framework for modeling objects that
 might otherwise be modeled using persistence technologies such as
 the Django ORM, but that do not belong in the database.
 
