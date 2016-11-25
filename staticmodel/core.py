@@ -13,7 +13,7 @@ from .util import format_kwargs
 
 class ATTR_NAME:
     class CLASS_VAR:
-        ATTR_NAMES = '_attr_names'
+        ATTR_NAMES = '_field_names'
     class INSTANCE_VAR:
         MEMBER_NAME = '_member_name'
         RAW_VALUE = '_raw_value'
@@ -79,8 +79,8 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         pass
 
     def __repr__(cls):
-        return '<StaticModel {}: Instances: {}, Attributes: {}>'.format(
-            cls.__name__, len(cls._instances.by_id), cls._attr_names)
+        return '<StaticModel {}: Instances: {}, Fields: {}>'.format(
+            cls.__name__, len(cls._instances.by_id), cls._field_names)
 
     def __getattribute__(cls, item):
         item = str(item)
@@ -88,7 +88,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
             try:
                 return cls.__dict__[item]
             except KeyError:
-                raise AttributeError('{!r} object has no attribute {!r}'.format(
+                raise AttributeError('{!r} model does not contain member {!r}'.format(
                     cls.__name__, item))
         else:
             return super(StaticModelMeta, cls).__getattribute__(item)
@@ -114,9 +114,9 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
             super(StaticModelMeta, cls).__setattr__(key, instance)
 
     def __call__(
-            cls, raw_value=None, member_name=None, attr_names=None, *attr_values,
+            cls, raw_value=None, member_name=None, field_names=None, *field_values,
             **kwargs):
-        if attr_values and raw_value:
+        if field_values and raw_value:
             raise ValueError("Positional and 'raw_value' parameters are mutually"
                              " exclusive")
 
@@ -126,13 +126,13 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
 
         if raw_value and isinstance(raw_value, Iterable) and not isinstance(
                 raw_value, str):
-            attr_values = raw_value
+            field_values = raw_value
 
         instance = super(StaticModelMeta, cls).__call__()
 
-        attr_names = attr_names or cls._attr_names or tuple(
-            'value{}'.format(i) for i in range(len(attr_values)))
-        instance.__dict__.update(dict(zip(attr_names, attr_values)))
+        field_names = field_names or cls._field_names or tuple(
+            'value{}'.format(i) for i in range(len(field_values)))
+        instance.__dict__.update(dict(zip(field_names, field_values)))
 
         setattr(instance, ATTR_NAME.INSTANCE_VAR.RAW_VALUE, raw_value)
 
@@ -186,7 +186,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         cls._index_instance(instance)
 
     def _index_instance(cls, instance):
-        for index_attr in (ATTR_NAME.INSTANCE_VAR.RAW_VALUE, ) + cls._attr_names:
+        for index_attr in (ATTR_NAME.INSTANCE_VAR.RAW_VALUE, ) + cls._field_names:
             index = cls._indexes.setdefault(index_attr, OrderedDict())
             try:
                 value = getattr(instance, index_attr)
@@ -211,11 +211,11 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         sorted_kwargs = sorted(
             kwargs.items(), key=lambda x: x[0] != ATTR_NAME.INSTANCE_VAR.MEMBER_NAME)
 
-        for attr_name, attr_value in sorted_kwargs:
-            if attr_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME:
+        for field_name, field_value in sorted_kwargs:
+            if field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME:
                 index = cls._instances.by_member_name
                 try:
-                    result = index[attr_value]
+                    result = index[field_value]
                 except KeyError:
                     raise StopIteration
                 else:
@@ -223,12 +223,12 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
 
             else:
                 try:
-                    index = cls._indexes[attr_name]
+                    index = cls._indexes[field_name]
                 except KeyError:
                     raise ValueError(
-                        'Invalid attribute {!r}'.format(attr_name))
+                        'Invalid field {!r}'.format(field_name))
                 else:
-                    result = index.get(cls._index_key_for_value(attr_value), [])
+                    result = index.get(cls._index_key_for_value(field_value), [])
                     for item in result:
                         yield item
 
@@ -247,24 +247,24 @@ class StaticModelMemberManager(object):
     #
     # Private API
     #
-    def _values_base(self, item_func, *attr_names, **kwargs):
+    def _values_base(self, item_func, *field_names, **kwargs):
         criteria = kwargs.pop('criteria', {})
         allow_flat = kwargs.pop('allow_flat', False)
         flat = kwargs.pop('flat', False)
 
-        if not attr_names:
-            attr_names = self.model._attr_names
+        if not field_names:
+            field_names = self.model._field_names
 
-        elif not frozenset(attr_names).issubset(frozenset(chain(
+        elif not frozenset(field_names).issubset(frozenset(chain(
                 (ATTR_NAME.INSTANCE_VAR.MEMBER_NAME,
                  ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
-                chain(self.model.__dict__.keys(), self.model._attr_names),
+                chain(self.model.__dict__.keys(), self.model._field_names),
                 chain.from_iterable(chain(
-                    submodel.__dict__.keys(), submodel._attr_names)
+                    submodel.__dict__.keys(), submodel._field_names)
                         for submodel in self.model.submodels())
                 ))):
             raise ValueError(
-                "Attribute names must be a subset of those available.")
+                "Field names must be a subset of those available.")
 
         if not criteria:
             results = self.all()
@@ -273,12 +273,12 @@ class StaticModelMemberManager(object):
 
         if allow_flat and flat:
             for rendered_item in chain.from_iterable(
-                    item_func(item, attr_names) for item in results):
+                    item_func(item, field_names) for item in results):
                 if rendered_item:
                     yield rendered_item
         else:
             for item in results:
-                rendered_item = item_func(item, attr_names)
+                rendered_item = item_func(item, field_names)
                 if rendered_item:
                     yield rendered_item
 
@@ -298,18 +298,18 @@ class StaticModelMemberManager(object):
 
         validated_result_ids = set()
         for result in index_search_results:
-            for attr_name, attr_value in kwargs.items():
-                if (attr_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME and
+            for field_name, field_value in kwargs.items():
+                if (field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME and
                         self.model._instances.by_member_name.get(
-                            attr_value) is result):
+                            field_value) is result):
                     continue
 
                 try:
-                    value = getattr(result, attr_name)
+                    value = getattr(result, field_name)
                 except AttributeError:
                     break
 
-                if value != attr_value:
+                if value != field_value:
                     break
 
             else:
@@ -342,21 +342,21 @@ class StaticModelMemberManager(object):
                 '{}.get({}) yielded multiple objects.'.format(
                     self.model.__name__, format_kwargs(kwargs)))
 
-    def _values_item(item, attr_names):
+    def _values_item(item, field_names):
         rendered_item = []
-        for attr_name in attr_names:
-            attr_value = getattr(item, attr_name, None)
-            if attr_value is not None:
-                rendered_item.append((attr_name, attr_value))
+        for field_name in field_names:
+            field_value = getattr(item, field_name, None)
+            if field_value is not None:
+                rendered_item.append((field_name, field_value))
         return OrderedDict(rendered_item)
     values = partialmethod(_values_base, _values_item)
 
-    def _values_list_item(item, attr_names):
+    def _values_list_item(item, field_names):
         rendered_item = []
-        for attr_name in attr_names:
-            attr_value = getattr(item, attr_name, None)
-            if attr_value is not None:
-                rendered_item.append(attr_value)
+        for field_name in field_names:
+            field_value = getattr(item, field_name, None)
+            if field_value is not None:
+                rendered_item.append(field_value)
         return tuple(rendered_item)
     values_list = partialmethod(_values_base, _values_list_item, allow_flat=True)
 
@@ -370,6 +370,6 @@ class StaticModel(six.with_metaclass(StaticModelMeta), object):
             self.__class__.__name__,
             getattr(self, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
             format_kwargs(OrderedDict(
-                (attr_name, getattr(self, attr_name, None))
-                for attr_name in self._attr_names)),
+                (field_name, getattr(self, field_name, None))
+                for field_name in self._field_names)),
         )

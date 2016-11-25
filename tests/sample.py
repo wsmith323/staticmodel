@@ -4,7 +4,7 @@ from staticmodel import StaticModel
 
 
 class OBJECT(StaticModel):
-    _attr_names = 'id', 'code', 'name'
+    _field_names = 'id', 'code', 'name'
 
     WAR = 1, 'war', 'War'
     PEACE = 2, 'peace', 'Peace'
@@ -24,8 +24,8 @@ class OBJECT(StaticModel):
 
 
 class PLACE(OBJECT):
-    _attr_names = OBJECT._attr_names + ('gis_location', 'continent')
-    _index_attr_names = _attr_names
+    _field_names = OBJECT._field_names + ('gis_location', 'continent')
+    _index_field_names = _field_names
 
     JERUSALEM = 5, 'jerusalem', 'Jerusalem', (31.77, 35.22), 'Asia'
     GENEVA = 6, 'geneva', 'Geneva', (46.2, 6.15), 'Europe'
@@ -44,7 +44,7 @@ class PLACE(OBJECT):
 
 
 class THING(OBJECT):
-    _attr_names = OBJECT._attr_names + ('is_organic',)
+    _field_names = OBJECT._field_names + ('is_organic',)
 
     METAL = 9, 'metal', 'Metal', False
     PLANT = 10, 'plant', 'Plant', True
@@ -62,7 +62,7 @@ class THING(OBJECT):
 
 
 class PERSON(OBJECT):
-    _attr_names = OBJECT._attr_names + ('_parent1', '_parent2')
+    _field_names = OBJECT._field_names + ('_parent1', '_parent2')
 
     PERSON_1 = 13, 'person_1', 'Person 1', None, None
     PERSON_2 = 14, 'person_2', 'Person 2', 'person_1', None

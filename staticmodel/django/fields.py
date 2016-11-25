@@ -10,7 +10,7 @@ class StaticModelFieldMixin(object):
         assert self._static_model, 'static_model required'
 
         self._value_field_name = kwargs.pop('value_field_name',
-                                       self._static_model._attr_names[0])
+                                       self._static_model._field_names[0])
         self._validate_values()
 
         self._display_field_name = kwargs.pop('display_field_name',

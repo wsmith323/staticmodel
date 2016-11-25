@@ -14,21 +14,21 @@ Models
 A model is defined using a class definition to create a sub-class
 of StaticModel.
 
-Member attribute names are declared with the `_attr_names` class
+Member field names are declared with the `_field_names` class
 attribute. The value should be a sequence of strings.
 
 Members are declared with an uppercase class attribute. Member values
 should be sequences with the same number of items as the value of
-`_attr_names`.
+`_field_names`.
 
 When the class definition is processed by the underlying metaclass,
-the **members become instances of the model**.
+the **members are transformed into instances of the model**.
 
 >>> from staticmodel import StaticModel
 >>>
 >>>
 >>> class Animal(StaticModel):
-...     _attr_names = 'name', 'description', 'domesticated'
+...     _field_names = 'name', 'description', 'domesticated'
 ...
 ...     DOG = 'Spot', "Man's best friend", True
 ...     CAT = 'Fluffy', "Man's gracious overlord", True
@@ -66,9 +66,9 @@ sub-class semantics.
 ...     ANTELOPE = 'Speedy', 'Likes to run', False
 >>>
 
-Sub-models **inherit the _attr_names attribute** of their parent model.
+Sub-models **inherit the _field_names attribute** of their parent model.
 
->>> WildAnimal._attr_names
+>>> WildAnimal._field_names
 ('name', 'description', 'domesticated')
 >>>
 >>> WildAnimal.DEER
@@ -80,7 +80,7 @@ However, sub-models **DO NOT inherit the members** of their parent model.
 >>> WildAnimal.DOG
 Traceback (most recent call last):
     ...
-AttributeError: 'WildAnimal' object has no attribute 'DOG'
+AttributeError: 'WildAnimal' model does not contain member 'DOG'
 >>>
 >>> pp(list(WildAnimal.members.all()))
 [<WildAnimal.DEER: name='Bambi', description='Likes to hide', domesticated=False>,
@@ -123,25 +123,25 @@ Model members may be filtered with the model's :py:meth:`members.filter` method.
  <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
 
-Additional attribute names can be provided by overriding `_attr_names`
+Additional field names can be provided by overriding `_field_names`
 in sub-models. If the intent is to extend the parent model's
-attribute definitions, a good practice is to reference the parent
+field definitions, a good practice is to reference the parent
 model's values as demonstrated in the **SmallHousePet** model below.
 
 >>> class SmallHousePet(Animal):
-...     _attr_names = Animal._attr_names + ('facility',)
+...     _field_names = Animal._field_names + ('facility',)
 ...
 ...     FISH = 'Nemo', 'Found at last', True, 'tank'
 ...     RODENT = 'Freddy', 'The Golden One', True, 'cage'
 >>>
 
-Filtering a model with an attribute name that is not in `_attr_names`
+Filtering a model with an field name that is not in `_field_names`
 will raise a ValueError exception.
 
 >>> pp(list(SmallHousePet.members.filter(species='hamster')))
 Traceback (most recent call last):
     ...
-ValueError: Invalid attribute 'species'
+ValueError: Invalid field 'species'
 >>>
 
 The name of the member used on the model is also available.
@@ -156,10 +156,10 @@ The name of the member used on the model is also available.
 [<SmallHousePet.RODENT: name='Freddy', description='The Golden One', domesticated=True, facility='cage'>]
 >>>
 
-Sub-models can provide completely different attribute names if desired.
+Sub-models can provide completely different field names if desired.
 
 >>> class FarmAnimal(Animal):
-...     _attr_names = 'food_provided', 'character', 'occupation', 'butcher_involved'
+...     _field_names = 'food_provided', 'character', 'occupation', 'butcher_involved'
 ...     PIG = 'bacon', 'Porky Pig', "President, All Folks Actors Guild", True
 ...     CHICKEN = 'eggs', 'Chicken Little', 'Salesman, Falling Sky Insurance', False
 >>>
@@ -171,13 +171,13 @@ Sub-models can provide completely different attribute names if desired.
 [<FarmAnimal.PIG: food_provided='bacon', character='Porky Pig', occupation='President, All Folks Actors Guild', butcher_involved=True>]
 >>>
 
-Only attribute names that exist on the model can be used. Parent models
-know nothing about sub-model attributes.
+Only field names that exist on the model can be used. Parent models
+know nothing about sub-model fields.
 
 >>> pp(list(Animal.members.filter(butcher_involved=True)))
 Traceback (most recent call last):
 ...
-ValueError: Invalid attribute 'butcher_involved'
+ValueError: Invalid field 'butcher_involved'
 >>>
 
 =====================
@@ -237,20 +237,20 @@ The primitive collections may be filtered by providing criteria.
 >>>
 
 The same rules apply for `criteria` as for .filter() with regards to
-valid attributes.
+valid fields.
 
 >>> jsonify(list(Animal.members.values(criteria={'species': 'hamster'})))
 Traceback (most recent call last):
     ...
-ValueError: Invalid attribute 'species'
+ValueError: Invalid field 'species'
 >>>
 
 Notice that when the `Animal` model was used to execute .values() or
-.values_list(), the `facility` attribute was not included in the
-results. This is because the default attributes for these methods is
-the value of Animal._attr_names, which does not include `facility`.
+.values_list(), the `facility` field was not included in the
+results. This is because the default fields for these methods is
+the value of Animal._field_names, which does not include `facility`.
 
-Specific attributes for model.values() and model.values_list() may be
+Specific fields for model.values() and model.values_list() may be
 provided by passing them as positional parameters to those methods.
 
 >>> jsonify(list(Animal.members.values('name', 'domesticated', 'facility')))
@@ -314,11 +314,11 @@ provided by passing them as positional parameters to those methods.
 ]
 >>>
 
-Notice that some members have the `facility` attribute and some don't,
+Notice that some members have the `facility` field and some don't,
 reflecting their actual contents. No placeholders are added in the
 results.
 
-Members that don't have ANY of the attributes are excluded from the
+Members that don't have ANY of the fields are excluded from the
 results. In the following examples, notice the absence of FarmAnimal members.
 
 >>> jsonify(list(Animal.members.values()))
@@ -392,7 +392,7 @@ results. In the following examples, notice the absence of FarmAnimal members.
 
 The model.values_list() method can be passed the `flat=True` parameter
 to collapse the values in the result. This usually only makes sense
-when combined with limiting the results to a single attribute name.
+when combined with limiting the results to a single field name.
 
 >>> jsonify(list(Animal.members.values_list('name', flat=True)))
 [
