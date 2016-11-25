@@ -11,10 +11,9 @@ class StaticModelFieldMixin(object):
 
         self._value_field_name = kwargs.pop('value_field_name',
                                        self._static_model._field_names[0])
-        self._validate_values()
-
         self._display_field_name = kwargs.pop('display_field_name',
                                               self._value_field_name)
+        self._validate_field_values()
 
         kwargs['choices'] = tuple(self._static_model.members.values_list(
             self._value_field_name, self._display_field_name))
@@ -34,7 +33,7 @@ class StaticModelFieldMixin(object):
 
         return name, path, args, kwargs
 
-    def _validate_values(self):
+    def _validate_field_values(self):
         for member in self._static_model.members.all():
             value = getattr(member, self._value_field_name)
             self._validate_member_value(member, value)
