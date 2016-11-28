@@ -52,20 +52,23 @@ class StaticModelFieldMixin(object):
             getattr(member, self._value_field_name))
 
     def to_python(self, db_value):
-        return super(StaticModelFieldMixin, self).to_python(
-            self._static_model.members.get(**{self._value_field_name: db_value}))
+        return self._static_model.members.get(**{
+            self._value_field_name: super(StaticModelFieldMixin, self).to_python(
+                db_value)})
 
 
-class StaticModelCharField(StaticModelFieldMixin, models.CharField):
-
+class StaticModelCharField(
+        six.with_metaclass(models.SubfieldBase, StaticModelFieldMixin,
+                           models.CharField)):
     def _validate_member_value(self, member, value):
         if not isinstance(value, six.string_types):
             raise ValueError('Field {!r} of member {!r} must be a string.'.format(
                 self._value_field_name, member._member_name))
 
 
-class StaticModelIntegerField(StaticModelFieldMixin, models.IntegerField):
-
+class StaticModelIntegerField(
+        six.with_metaclass(models.SubfieldBase, StaticModelFieldMixin,
+                           models.IntegerField)):
     def _validate_member_value(self, member, value):
         if not isinstance(value, six.integer_types):
             raise ValueError('Field {!r} of member {!r} must be an integer.'.format(
