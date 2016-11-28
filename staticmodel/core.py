@@ -46,7 +46,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         super(StaticModelMeta, cls).__init__(*args, **kwargs)
 
         cls._submodels = OrderedDict()
-        cls._instances = SimpleNamespace(
+        cls._members = SimpleNamespace(
             by_id=OrderedDict(), by_member_name=OrderedDict())
         cls._indexes = {}
 
@@ -79,8 +79,8 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         pass
 
     def __repr__(cls):
-        return '<StaticModel {}: Instances: {}, Fields: {}>'.format(
-            cls.__name__, len(cls._instances.by_id), cls._field_names)
+        return '<StaticModel {}: Members: {}, Fields: {}>'.format(
+            cls.__name__, len(cls._members.by_id), cls._field_names)
 
     def __getattribute__(cls, item):
         item = str(item)
@@ -163,7 +163,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
             if isinstance(parent, mcs):
                 if parent is StaticModel:
                     continue
-                for member in cls._instances.by_id.values():
+                for member in cls._members.by_id.values():
                     member_name = getattr(
                         member, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, None)
                     if member_name is not None:
@@ -180,9 +180,9 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
 
         setattr(instance, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, member_name)
 
-        cls._instances.by_id[id(instance)] = instance
+        cls._members.by_id[id(instance)] = instance
         if member_name is not None:
-            cls._instances.by_member_name[member_name] = instance
+            cls._members.by_member_name[member_name] = instance
         cls._index_instance(instance)
 
     def _index_instance(cls, instance):
@@ -213,7 +213,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
 
         for field_name, field_value in sorted_kwargs:
             if field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME:
-                index = cls._instances.by_member_name
+                index = cls._members.by_member_name
                 try:
                     result = index[field_value]
                 except KeyError:
@@ -291,7 +291,7 @@ class StaticModelMemberManager(object):
     # Public API
     #
     def all(self):
-        return (instance for instance in self.model._instances.by_id.values())
+        return (instance for instance in self.model._members.by_id.values())
 
     def filter(self, **kwargs):
         index_search_results = self.model._get_index_search_results(kwargs)
@@ -300,7 +300,7 @@ class StaticModelMemberManager(object):
         for result in index_search_results:
             for field_name, field_value in kwargs.items():
                 if (field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME and
-                        self.model._instances.by_member_name.get(
+                        self.model._members.by_member_name.get(
                             field_value) is result):
                     continue
 
