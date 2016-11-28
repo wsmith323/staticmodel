@@ -52,9 +52,14 @@ class StaticModelFieldMixin(object):
             getattr(member, self._value_field_name))
 
     def to_python(self, db_value):
-        return self._static_model.members.get(**{
-            self._value_field_name: super(StaticModelFieldMixin, self).to_python(
-                db_value)})
+        super_value = super(StaticModelFieldMixin, self).to_python(db_value)
+        if super_value is None:
+            return None
+        elif super_value == '':
+            return ''
+        else:
+            return self._static_model.members.get(
+                **{self._value_field_name: super_value})
 
 
 class StaticModelCharField(
