@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup, find_packages
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 
 
 def file_read(filename):
@@ -19,7 +19,7 @@ setup(
     author="Warren A. Smith",
     author_email="warren@wandrsmith.net",
     description="Static Models.",
-    long_description=file_read("README.md"),
+    long_description=file_read("README.rst"),
     license="MIT",
     keywords="static constant model enum",
     url="https://github.com/wsmith323/staticmodel",
@@ -33,7 +33,6 @@ setup(
 
             # Indicate who your project is intended for
             'Intended Audience :: Developers',
-            'Topic :: Software Development :: Object Modeling',
 
             # Pick your license as you wish (should match "license" above)
             'License :: OSI Approved :: MIT License',
