@@ -53,27 +53,27 @@ class StaticModelFieldMixin(object):
 
     def to_python(self, db_value):
         super_value = super(StaticModelFieldMixin, self).to_python(db_value)
-        if super_value is None:
-            return None
-        elif super_value == '':
-            return ''
-        else:
+        try:
             return self._static_model.members.get(
                 **{self._value_field_name: super_value})
+        except self._static_model.DoesNotExist:
+            return None
+
+    def from_db_value(self, value, expression, connection, context):
+        try:
+            return self._static_model.members.get(**{self._value_field_name: value})
+        except self._static_model.DoesNotExist:
+            return None
 
 
-class StaticModelCharField(
-        six.with_metaclass(models.SubfieldBase, StaticModelFieldMixin,
-                           models.CharField)):
+class StaticModelCharField(StaticModelFieldMixin, models.CharField):
     def _validate_member_value(self, member, value):
         if not isinstance(value, six.string_types):
             raise ValueError('Field {!r} of member {!r} must be a string.'.format(
                 self._value_field_name, member._member_name))
 
 
-class StaticModelIntegerField(
-        six.with_metaclass(models.SubfieldBase, StaticModelFieldMixin,
-                           models.IntegerField)):
+class StaticModelIntegerField(StaticModelFieldMixin, models.IntegerField):
     def _validate_member_value(self, member, value):
         if not isinstance(value, six.integer_types):
             raise ValueError('Field {!r} of member {!r} must be an integer.'.format(
