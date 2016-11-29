@@ -65,6 +65,15 @@ class StaticModelFieldMixin(object):
         except self._static_model.DoesNotExist:
             return None
 
+    def contribute_to_class(self, cls, name, **kwargs):
+        super(StaticModelFieldMixin, self).contribute_to_class(cls, name, **kwargs)
+
+        def _get_FIELD_display(instance):
+            member = getattr(instance, self.attname)
+            return getattr(member, self._display_field_name)
+
+        setattr(cls, 'get_{}_display'.format(self.name), _get_FIELD_display)
+
 
 class StaticModelCharField(StaticModelFieldMixin, models.CharField):
     def _validate_member_value(self, member, value):
