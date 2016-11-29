@@ -24,3 +24,7 @@ constantmodel release notes
 =====
  * Refactoring.
  * Bug fixes.
+
+0.1.6
+=====
+ * Fix bug in django field. Make .get_FIELD_display() work properly.
