@@ -35,10 +35,10 @@ class StaticModelFieldMixin(object):
 
     def _validate_field_values(self):
         for member in self._static_model.members.all():
-            value = getattr(member, self._value_field_name)
+            value = getattr(member, self._value_field_name, None)
             self._validate_member_value(member, value)
 
-            display_value = getattr(member, self._display_field_name)
+            display_value = getattr(member, self._display_field_name, None)
             if not isinstance(display_value, six.string_types):
                 raise ValueError(
                     'Field {!r} of member {!r} must be a string.'.format(
