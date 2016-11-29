@@ -110,20 +110,20 @@ the sub-model instead of the parent model.
 Member access methods
 *********************
 
-A model member may be retrieved using the model's :py:meth:`members.get` method.
+A model member may be retrieved using the model's :py:meth:``members.get`` method.
 
 >>> WildAnimal.members.get(name='Bambi')
 <WildAnimal.DEER: name='Bambi', description='Likes to hide', domesticated=False>
 >>>
 
-Model members may be filtered with the model's :py:meth:`members.filter` method.
+Model members may be filtered with the model's :py:meth:``members.filter`` method.
 
 >>> pp(list(Animal.members.filter(domesticated=True)))
 [<Animal.DOG: name='Spot', description="Man's best friend", domesticated=True>,
  <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
 
-Additional field names can be provided by overriding `_field_names`
+Additional field names can be provided by overriding ``_field_names``
 in sub-models. If the intent is to extend the parent model's
 field definitions, a good practice is to reference the parent
 model's values as demonstrated in the **SmallHousePet** model below.
@@ -135,7 +135,7 @@ model's values as demonstrated in the **SmallHousePet** model below.
 ...     RODENT = 'Freddy', 'The Golden One', True, 'cage'
 >>>
 
-Filtering a model with an field name that is not in `_field_names`
+Filtering a model with an field name that is not in ``_field_names``
 will raise a ValueError exception.
 
 >>> pp(list(SmallHousePet.members.filter(species='hamster')))
@@ -236,7 +236,7 @@ The primitive collections may be filtered by providing criteria.
 ]
 >>>
 
-The same rules apply for `criteria` as for .filter() with regards to
+The same rules apply for ``criteria`` as for ``.filter()`` with regards to
 valid fields.
 
 >>> jsonify(list(Animal.members.values(criteria={'species': 'hamster'})))
@@ -245,12 +245,12 @@ Traceback (most recent call last):
 ValueError: Invalid field 'species'
 >>>
 
-Notice that when the `Animal` model was used to execute .values() or
-.values_list(), the `facility` field was not included in the
+Notice that when the ``Animal`` model was used to execute ``.values()`` or
+``.values_list()``, the ``facility`` field was not included in the
 results. This is because the default fields for these methods is
-the value of Animal._field_names, which does not include `facility`.
+the value of ``Animal._field_names``, which does not include ``facility``.
 
-Specific fields for model.values() and model.values_list() may be
+Specific fields for ``.values()`` and ``.values_list()`` may be
 provided by passing them as positional parameters to those methods.
 
 >>> jsonify(list(Animal.members.values('name', 'domesticated', 'facility')))
@@ -314,12 +314,13 @@ provided by passing them as positional parameters to those methods.
 ]
 >>>
 
-Notice that some members have the `facility` field and some don't,
+Notice that some members have the ``facility`` field and some don't,
 reflecting their actual contents. No placeholders are added in the
 results.
 
 Members that don't have ANY of the fields are excluded from the
-results. In the following examples, notice the absence of FarmAnimal members.
+results. In the following examples, notice the absence of
+``FarmAnimal`` members.
 
 >>> jsonify(list(Animal.members.values()))
 [
@@ -390,9 +391,9 @@ results. In the following examples, notice the absence of FarmAnimal members.
 ]
 >>>
 
-The model.values_list() method can be passed the `flat=True` parameter
+The ``values_list()`` method can be passed the ``flat=True`` parameter
 to collapse the values in the result. This usually only makes sense
-when combined with limiting the results to a single field name.
+when limiting the results to a single field name.
 
 >>> jsonify(list(Animal.members.values_list('name', flat=True)))
 [
