@@ -34,7 +34,7 @@ the **members are transformed into instances of the model**.
 ...     CAT = 'Fluffy', "Man's gracious overlord", True
 >>>
 
-The entire collection of members can be retrieved with the :py:meth:`members.all` method.
+The entire collection of members can be retrieved with the ``members.all()`` method.
 
 >>> from pprint import pprint as pp
 >>>
@@ -46,13 +46,13 @@ The entire collection of members can be retrieved with the :py:meth:`members.all
 
  **NOTE:** These methods return generators:
 
-   - :py:meth:`members.all`
-   - :py:meth:`members.filter`
-   - :py:meth:`members.values`
-   - :py:meth:`members.values_list`
+   - ``members.all()``
+   - ``members.filter()``
+   - ``members.values()``
+   - ``members.values_list()``
 
  For demonstration purposes in all of these examples, we consume
- those generators with :py:func:`list`.
+ those generators with ``list()``.
 
 **********
 Sub-models
@@ -110,13 +110,13 @@ the sub-model instead of the parent model.
 Member access methods
 *********************
 
-A model member may be retrieved using the model's :py:meth:``members.get`` method.
+A model member may be retrieved using the model's ``members.get()`` method.
 
 >>> WildAnimal.members.get(name='Bambi')
 <WildAnimal.DEER: name='Bambi', description='Likes to hide', domesticated=False>
 >>>
 
-Model members may be filtered with the model's :py:meth:``members.filter`` method.
+Model members may be filtered with the model's ``members.filter()`` method.
 
 >>> pp(list(Animal.members.filter(domesticated=True)))
 [<Animal.DOG: name='Spot', description="Man's best friend", domesticated=True>,

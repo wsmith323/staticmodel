@@ -19,7 +19,7 @@ arguments taken by their respective sub-classes.
     ``static_model._field_names``.
   * ``display_field_name``: The static model field name whose value will
     be used as the display value in the ``choices`` passed to the parent
-    field. Default to the value of ``value_field_name``.
+    field. Defaults to the value of ``value_field_name``.
 
 When the model field is instantiated, it validates the values of
 ``value_field_name`` and ``display_field_name`` against
