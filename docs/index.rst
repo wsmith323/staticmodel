@@ -12,3 +12,8 @@ Static Model Documentation
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. automodule:: staticmodel.django
+    :members:
+    :undoc-members:
+    :show-inheritance:
