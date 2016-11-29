@@ -2,8 +2,6 @@ import os
 
 from setuptools import setup, find_packages
 
-__version__ = "0.1.6"
-
 
 def file_read(filename):
     filepath = os.path.join(os.path.dirname(__file__), filename)
@@ -11,10 +9,14 @@ def file_read(filename):
         return flo.read()
 
 
+__version__ = file_read('staticmodel/VERSION.txt').strip()
+
+
 setup(
     name="staticmodel",
     version=__version__,
     packages=find_packages(exclude=['tests', 'docs']),
+    include_package_data=True,
     install_requires=['six'],
     author="Warren A. Smith",
     author_email="warren@wandrsmith.net",

@@ -407,3 +407,7 @@ when limiting the results to a single field name.
 >>>
 """
 from .core import StaticModel
+
+import os
+with open(os.path.join(os.path.dirname(__file__), 'VERSION.txt')) as f:
+    __version__ = f.read().strip()

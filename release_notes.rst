@@ -28,3 +28,7 @@ constantmodel release notes
 0.1.6
 =====
  * Fix bug in django field. Make .get_FIELD_display() work properly.
+
+0.1.7
+=====
+ * Make version available from package.
