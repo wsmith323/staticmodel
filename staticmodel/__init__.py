@@ -123,10 +123,14 @@ Model members may be filtered with the model's ``members.filter()`` method.
  <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
 
+*****************
+Additional fields
+*****************
+
 Additional field names can be provided by overriding ``_field_names``
 in sub-models. If the intent is to extend the parent model's
 field definitions, a good practice is to reference the parent
-model's values as demonstrated in the **SmallHousePet** model below.
+model's values as demonstrated in the ``SmallHousePet`` model below.
 
 >>> class SmallHousePet(Animal):
 ...     _field_names = Animal._field_names + ('facility',)
@@ -135,91 +139,120 @@ model's values as demonstrated in the **SmallHousePet** model below.
 ...     RODENT = 'Freddy', 'The Golden One', True, 'cage'
 >>>
 
-Filtering a model with an field name that is not in ``_field_names``
-will raise a ValueError exception.
+Member queries on the sub-model can use the additional field names.
 
->>> pp(list(SmallHousePet.members.filter(species='hamster')))
-Traceback (most recent call last):
-    ...
-ValueError: Invalid field 'species'
+>>> pp(list(SmallHousePet.members.filter(facility='tank')))
+[<SmallHousePet.FISH: name='Nemo', description='Found at last', domesticated=True, facility='tank'>]
 >>>
 
-The name of the member used on the model is also available.
+Parent models are not aware of additional fields that have been added
+by sub-models, so those additional fields cannot be used in member
+queries.
 
->>> member = SmallHousePet.members.get(_member_name='FISH')
->>> member
-<SmallHousePet.FISH: name='Nemo', description='Found at last', domesticated=True, facility='tank'>
->>>
->>> member._member_name
-'FISH'
->>> pp(list(Animal.members.filter(_member_name='RODENT')))
-[<SmallHousePet.RODENT: name='Freddy', description='The Golden One', domesticated=True, facility='cage'>]
->>>
-
-Sub-models can provide completely different field names if desired.
-
->>> class FarmAnimal(Animal):
-...     _field_names = 'food_provided', 'character', 'occupation', 'butcher_involved'
-...     PIG = 'bacon', 'Porky Pig', "President, All Folks Actors Guild", True
-...     CHICKEN = 'eggs', 'Chicken Little', 'Salesman, Falling Sky Insurance', False
->>>
-
->>> pp(list(FarmAnimal.members.all()))
-[<FarmAnimal.PIG: food_provided='bacon', character='Porky Pig', occupation='President, All Folks Actors Guild', butcher_involved=True>,
- <FarmAnimal.CHICKEN: food_provided='eggs', character='Chicken Little', occupation='Salesman, Falling Sky Insurance', butcher_involved=False>]
->>> pp(list(FarmAnimal.members.filter(butcher_involved=True)))
-[<FarmAnimal.PIG: food_provided='bacon', character='Porky Pig', occupation='President, All Folks Actors Guild', butcher_involved=True>]
->>>
-
-Only field names that exist on the model can be used. Parent models
-know nothing about sub-model fields.
-
->>> pp(list(Animal.members.filter(butcher_involved=True)))
+>>> pp(list(Animal.members.filter(facility='tank')))
 Traceback (most recent call last):
 ...
-ValueError: Invalid field 'butcher_involved'
+ValueError: Invalid field 'facility'
+>>>
+
+**********************
+The _member_name field
+**********************
+
+The name of each member's class attribute on the model and parent
+models is available as the ``_member_name`` field on the member.
+
+>>> SmallHousePet.FISH._member_name
+'FISH'
+>>> Animal.FISH._member_name
+'FISH'
+>>>
+
+The ``_member_name`` field can be used in member queries.
+
+>>> Animal.members.get(_member_name='FISH')
+<SmallHousePet.FISH: name='Nemo', description='Found at last', domesticated=True, facility='tank'>
+>>> pp(list(Animal.members.filter(_member_name='RODENT')))
+[<SmallHousePet.RODENT: name='Freddy', description='The Golden One', domesticated=True, facility='cage'>]
 >>>
 
 =====================
 Primitive Collections
 =====================
 
-Model members may be rendered as primitive collections.
+Model members may be rendered as primitive collections using the
+``values()`` and ``values_list()`` methods.
 
 >>> # Custom function for formatting primitive collections that returns
 >>> # the same results in python 2 and 3.
 >>> from staticmodel.util import jsonify
 >>>
 >>>
->>> jsonify(list(SmallHousePet.members.values()))
+>>> jsonify(list(Animal.members.values()))
 [
+  {
+    "name": "Spot",
+    "description": "Man's best friend",
+    "domesticated": true
+  },
+  {
+    "name": "Fluffy",
+    "description": "Man's gracious overlord",
+    "domesticated": true
+  },
+  {
+    "name": "Bambi",
+    "description": "Likes to hide",
+    "domesticated": false
+  },
+  {
+    "name": "Speedy",
+    "description": "Likes to run",
+    "domesticated": false
+  },
   {
     "name": "Nemo",
     "description": "Found at last",
-    "domesticated": true,
-    "facility": "tank"
+    "domesticated": true
   },
   {
     "name": "Freddy",
     "description": "The Golden One",
-    "domesticated": true,
-    "facility": "cage"
+    "domesticated": true
   }
 ]
 >>>
->>> jsonify(list(SmallHousePet.members.values_list()))
+>>> jsonify(list(Animal.members.values_list()))
 [
+  [
+    "Spot",
+    "Man's best friend",
+    true
+  ],
+  [
+    "Fluffy",
+    "Man's gracious overlord",
+    true
+  ],
+  [
+    "Bambi",
+    "Likes to hide",
+    false
+  ],
+  [
+    "Speedy",
+    "Likes to run",
+    false
+  ],
   [
     "Nemo",
     "Found at last",
-    true,
-    "tank"
+    true
   ],
   [
     "Freddy",
     "The Golden One",
-    true,
-    "cage"
+    true
   ]
 ]
 >>>
@@ -236,13 +269,13 @@ The primitive collections may be filtered by providing criteria.
 ]
 >>>
 
-The same rules apply for ``criteria`` as for ``.filter()`` with regards to
-valid fields.
+The same rules apply for ``criteria`` as for ``get()`` and ``filter()``
+with regard to valid fields.
 
->>> jsonify(list(Animal.members.values(criteria={'species': 'hamster'})))
+>>> jsonify(list(Animal.members.values(criteria={'facility': 'tank'})))
 Traceback (most recent call last):
     ...
-ValueError: Invalid field 'species'
+ValueError: Invalid field 'facility'
 >>>
 
 Notice that when the ``Animal`` model was used to execute ``.values()`` or
@@ -319,90 +352,56 @@ reflecting their actual contents. No placeholders are added in the
 results.
 
 Members that don't have ANY of the fields are excluded from the
-results. In the following examples, notice the absence of
-``FarmAnimal`` members.
+results.
 
->>> jsonify(list(Animal.members.values()))
+>>> jsonify(list(Animal.members.values('facility')))
 [
   {
-    "name": "Spot",
-    "description": "Man's best friend",
-    "domesticated": true
+    "facility": "tank"
   },
   {
-    "name": "Fluffy",
-    "description": "Man's gracious overlord",
-    "domesticated": true
-  },
-  {
-    "name": "Bambi",
-    "description": "Likes to hide",
-    "domesticated": false
-  },
-  {
-    "name": "Speedy",
-    "description": "Likes to run",
-    "domesticated": false
-  },
-  {
-    "name": "Nemo",
-    "description": "Found at last",
-    "domesticated": true
-  },
-  {
-    "name": "Freddy",
-    "description": "The Golden One",
-    "domesticated": true
+    "facility": "cage"
   }
 ]
 >>>
->>> jsonify(list(Animal.members.values_list()))
+>>> jsonify(list(Animal.members.values_list('facility')))
 [
   [
-    "Spot",
-    "Man's best friend",
-    true
+    "tank"
   ],
   [
-    "Fluffy",
-    "Man's gracious overlord",
-    true
-  ],
-  [
-    "Bambi",
-    "Likes to hide",
-    false
-  ],
-  [
-    "Speedy",
-    "Likes to run",
-    false
-  ],
-  [
-    "Nemo",
-    "Found at last",
-    true
-  ],
-  [
-    "Freddy",
-    "The Golden One",
-    true
+    "cage"
   ]
 ]
 >>>
 
 The ``values_list()`` method can be passed the ``flat=True`` parameter
-to collapse the values in the result. This usually only makes sense
-when limiting the results to a single field name.
+to collapse the values in the result.
 
->>> jsonify(list(Animal.members.values_list('name', flat=True)))
+>>> jsonify(list(Animal.members.values_list('facility', flat=True)))
+[
+  "tank",
+  "cage"
+]
+
+Using the ``flat=True`` usually only makes sense when limiting the
+results to a single field name.
+
+>>>
+>>> jsonify(list(Animal.members.values_list('name', 'description', flat=True)))
 [
   "Spot",
+  "Man's best friend",
   "Fluffy",
+  "Man's gracious overlord",
   "Bambi",
+  "Likes to hide",
   "Speedy",
+  "Likes to run",
   "Nemo",
-  "Freddy"
+  "Found at last",
+  "Freddy",
+  "The Golden One"
 ]
 >>>
 """
