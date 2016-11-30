@@ -102,7 +102,7 @@ class PERSON(OBJECT):
                     person is not self and self in person.parents)
 
 
-class SampleTest(TestCase):
+class StaticModelTests(TestCase):
     maxDiff = None
     # TODO: Increase test coverage
 
