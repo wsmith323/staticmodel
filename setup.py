@@ -23,7 +23,7 @@ setup(
     description="Static Models.",
     long_description=file_read("README.rst"),
     license="MIT",
-    keywords="static constant model enum",
+    keywords="static constant model enum django",
     url="https://github.com/wsmith323/staticmodel",
     test_suite="tests",
     classifiers=[
