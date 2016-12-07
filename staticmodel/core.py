@@ -246,14 +246,6 @@ class StaticModelMemberManager(object):
         self.model = model
 
     #
-    # Private API
-    #
-    def _build_filter_error(self, kwargs):
-        return self.model.DoesNotExist(
-            '{}.filter({}) yielded no objects.'.format(
-                self.model.__name__, format_kwargs(kwargs)))
-
-    #
     # Public API
     #
     def all(self):
