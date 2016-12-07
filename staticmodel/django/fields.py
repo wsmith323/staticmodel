@@ -15,7 +15,7 @@ class StaticModelFieldMixin(object):
                                               self._value_field_name)
         self._validate_field_values()
 
-        kwargs['choices'] = tuple(self._static_model.members.values_list(
+        kwargs['choices'] = tuple(self._static_model.members.all().values_list(
             self._value_field_name, self._display_field_name))
 
         super(StaticModelFieldMixin, self).__init__(*args, **kwargs)

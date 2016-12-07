@@ -1,16 +1,21 @@
-constantmodel release notes
+Static Model release notes
 ===========================
 
-0.1.0
+0.2.0
 =====
- * Initial release.
+ * BREAKING CHANGE: Move the values() and values_list() methods into
+   the class of the object returned by all() and filter().
 
-0.1.2
+
+0.1.7
 =====
- * Refactoring.
- * Bug fixes.
+ * Make version available from package.
 
-0.1.3
+0.1.6
+=====
+ * Fix bug in django field. Make .get_FIELD_display() work properly.
+
+0.1.5
 =====
  * Refactoring.
  * Bug fixes.
@@ -20,15 +25,17 @@ constantmodel release notes
  * Refactoring.
  * Bug fixes.
 
-0.1.5
+0.1.3
 =====
  * Refactoring.
  * Bug fixes.
 
-0.1.6
+0.1.2
 =====
- * Fix bug in django field. Make .get_FIELD_display() work properly.
+ * Refactoring.
+ * Bug fixes.
 
-0.1.7
+0.1.0
 =====
- * Make version available from package.
+ * Initial release.
+

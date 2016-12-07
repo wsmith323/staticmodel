@@ -204,12 +204,13 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
     def _index_key_for_value(cls, obj):
         return str(obj)
 
-    def _get_index_search_results(cls, kwargs):
+    def _get_index_search_results(cls, criteria):
         # Make sure ATTR_NAME.INSTANCE_VAR.MEMBER_NAME gets processed
         # first if it is present. There is no point in hitting the
         # other indexes if we miss there.
         sorted_kwargs = sorted(
-            kwargs.items(), key=lambda x: x[0] != ATTR_NAME.INSTANCE_VAR.MEMBER_NAME)
+            criteria.items(),
+            key=lambda x: x[0] != ATTR_NAME.INSTANCE_VAR.MEMBER_NAME)
 
         for field_name, field_value in sorted_kwargs:
             if field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME:
@@ -247,8 +248,86 @@ class StaticModelMemberManager(object):
     #
     # Private API
     #
+    def _build_filter_error(self, kwargs):
+        return self.model.DoesNotExist(
+            '{}.filter({}) yielded no objects.'.format(
+                self.model.__name__, format_kwargs(kwargs)))
+
+    #
+    # Public API
+    #
+    def all(self):
+        return StaticModelMembers(
+            self.model._members.by_id.values(), model=self.model)
+
+    def filter(self, **criteria):
+        index_search_results = self.model._get_index_search_results(criteria)
+
+        results = []
+
+        validated_member_ids = set()
+        for member in index_search_results:
+            for field_name, field_value in criteria.items():
+                if (field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME and
+                        self.model._members.by_member_name.get(
+                            field_value) is member):
+                    continue
+
+                try:
+                    value = getattr(member, field_name)
+                except AttributeError:
+                    break
+
+                if value != field_value:
+                    break
+
+            else:
+                member_id = id(member)
+                if member_id not in validated_member_ids:
+                    validated_member_ids.add(member_id)
+                    results.append(member)
+
+        return StaticModelMembers(results, model=self.model)
+
+    def get(self, _return_none=False, **kwargs):
+        results = self.filter(**kwargs)
+        if not results:
+            if _return_none:
+                return None
+            else:
+                raise self.model.DoesNotExist(
+                    '{}.get({}) yielded no objects.'.format(
+                        self.model.__name__, format_kwargs(kwargs)))
+
+        elif len(results) == 1:
+            return results[0]
+        else:
+            raise self.model.MultipleObjectsReturned(
+                '{}.get({}) yielded multiple objects.'.format(
+                    self.model.__name__, format_kwargs(kwargs)))
+
+
+class StaticModel(six.with_metaclass(StaticModelMeta), object):
+    """
+    Base class for static models.
+    """
+    def __repr__(self):
+        return '<{}.{}: {}>'.format(
+            self.__class__.__name__,
+            getattr(self, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
+            format_kwargs(OrderedDict(
+                (field_name, getattr(self, field_name, None))
+                for field_name in self._field_names)),
+        )
+
+
+class StaticModelMembers(list):
+
+    def __init__(self, *args, **kwargs):
+        self.model = kwargs.pop('model')
+        super(StaticModelMembers, self).__init__(*args, **kwargs)
+
     def _values_base(self, item_func, *field_names, **kwargs):
-        criteria = kwargs.pop('criteria', {})
         allow_flat = kwargs.pop('allow_flat', False)
         flat = kwargs.pop('flat', False)
 
@@ -266,81 +345,20 @@ class StaticModelMemberManager(object):
             raise ValueError(
                 "Field names must be a subset of those available.")
 
-        if not criteria:
-            results = self.all()
-        else:
-            results = self.filter(**criteria)
+        results = []
 
         if allow_flat and flat:
             for rendered_item in chain.from_iterable(
-                    item_func(item, field_names) for item in results):
+                    item_func(item, field_names) for item in self):
                 if rendered_item:
-                    yield rendered_item
+                    results.append(rendered_item)
         else:
-            for item in results:
+            for item in self:
                 rendered_item = item_func(item, field_names)
                 if rendered_item:
-                    yield rendered_item
+                    results.append(rendered_item)
 
-    def _build_filter_error(self, kwargs):
-        return self.model.DoesNotExist(
-            '{}.filter({}) yielded no objects.'.format(
-                self.model.__name__, format_kwargs(kwargs)))
-
-    #
-    # Public API
-    #
-    def all(self):
-        return (instance for instance in self.model._members.by_id.values())
-
-    def filter(self, **kwargs):
-        index_search_results = self.model._get_index_search_results(kwargs)
-
-        validated_result_ids = set()
-        for result in index_search_results:
-            for field_name, field_value in kwargs.items():
-                if (field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME and
-                        self.model._members.by_member_name.get(
-                            field_value) is result):
-                    continue
-
-                try:
-                    value = getattr(result, field_name)
-                except AttributeError:
-                    break
-
-                if value != field_value:
-                    break
-
-            else:
-                result_id = id(result)
-                if result_id not in validated_result_ids:
-                    validated_result_ids.add(result_id)
-                    yield result
-
-        if not validated_result_ids:
-            raise self._build_filter_error(kwargs)
-
-    def get(self, _return_none=False, **kwargs):
-        try:
-            results = self.filter(**kwargs)
-            result = next(results)
-        except self.model.DoesNotExist:
-            if _return_none:
-                return None
-            else:
-                raise self.model.DoesNotExist(
-                    '{}.get({}) yielded no objects.'.format(
-                        self.model.__name__, format_kwargs(kwargs)))
-
-        try:
-            next(results)
-        except StopIteration:
-            return result
-        else:
-            raise self.model.MultipleObjectsReturned(
-                '{}.get({}) yielded multiple objects.'.format(
-                    self.model.__name__, format_kwargs(kwargs)))
+        return results
 
     def _values_item(item, field_names):
         rendered_item = []
@@ -359,17 +377,3 @@ class StaticModelMemberManager(object):
                 rendered_item.append(field_value)
         return tuple(rendered_item)
     values_list = partialmethod(_values_base, _values_list_item, allow_flat=True)
-
-
-class StaticModel(six.with_metaclass(StaticModelMeta), object):
-    """
-    Base class for static models.
-    """
-    def __repr__(self):
-        return '<{}.{}: {}>'.format(
-            self.__class__.__name__,
-            getattr(self, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
-            format_kwargs(OrderedDict(
-                (field_name, getattr(self, field_name, None))
-                for field_name in self._field_names)),
-        )

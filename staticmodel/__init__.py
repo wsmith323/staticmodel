@@ -39,20 +39,10 @@ The entire collection of members can be retrieved with the ``members.all()`` met
 >>> from pprint import pprint as pp
 >>>
 >>>
->>> pp(list(Animal.members.all()))
+>>> pp(Animal.members.all())
 [<Animal.DOG: name='Spot', description="Man's best friend", domesticated=True>,
  <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
-
- **NOTE:** These methods return generators:
-
-   - ``members.all()``
-   - ``members.filter()``
-   - ``members.values()``
-   - ``members.values_list()``
-
- For demonstration purposes in all of these examples, we consume
- those generators with ``list()``.
 
 **********
 Sub-models
@@ -82,7 +72,7 @@ Traceback (most recent call last):
     ...
 AttributeError: 'WildAnimal' model does not contain member 'DOG'
 >>>
->>> pp(list(WildAnimal.members.all()))
+>>> pp(WildAnimal.members.all())
 [<WildAnimal.DEER: name='Bambi', description='Likes to hide', domesticated=False>,
  <WildAnimal.ANTELOPE: name='Speedy', description='Likes to run', domesticated=False>]
 >>>
@@ -91,7 +81,7 @@ Parent models **gain the members** of their sub-models. Notice that the
 **Animal** model now contains the members just defined in the
 **WildAnimal** sub-model.
 
->>> pp(list(Animal.members.all()))
+>>> pp(Animal.members.all())
 [<Animal.DOG: name='Spot', description="Man's best friend", domesticated=True>,
  <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>,
  <WildAnimal.DEER: name='Bambi', description='Likes to hide', domesticated=False>,
@@ -118,7 +108,7 @@ A model member may be retrieved using the model's ``members.get()`` method.
 
 Model members may be filtered with the model's ``members.filter()`` method.
 
->>> pp(list(Animal.members.filter(domesticated=True)))
+>>> pp(Animal.members.filter(domesticated=True))
 [<Animal.DOG: name='Spot', description="Man's best friend", domesticated=True>,
  <Animal.CAT: name='Fluffy', description="Man's gracious overlord", domesticated=True>]
 >>>
@@ -128,9 +118,8 @@ Additional fields
 *****************
 
 Additional field names can be provided by overriding ``_field_names``
-in sub-models. If the intent is to extend the parent model's
-field definitions, a good practice is to reference the parent
-model's values as demonstrated in the ``SmallHousePet`` model below.
+in sub-models. A good practice is to reference the parent model's
+values as demonstrated in the ``SmallHousePet`` model below.
 
 >>> class SmallHousePet(Animal):
 ...     _field_names = Animal._field_names + ('facility',)
@@ -141,7 +130,7 @@ model's values as demonstrated in the ``SmallHousePet`` model below.
 
 Member queries on the sub-model can use the additional field names.
 
->>> pp(list(SmallHousePet.members.filter(facility='tank')))
+>>> pp(SmallHousePet.members.filter(facility='tank'))
 [<SmallHousePet.FISH: name='Nemo', description='Found at last', domesticated=True, facility='tank'>]
 >>>
 
@@ -149,7 +138,7 @@ Parent models are not aware of additional fields that have been added
 by sub-models, so those additional fields cannot be used in member
 queries.
 
->>> pp(list(Animal.members.filter(facility='tank')))
+>>> pp(Animal.members.filter(facility='tank'))
 Traceback (most recent call last):
 ...
 ValueError: Invalid field 'facility'
@@ -172,7 +161,7 @@ The ``_member_name`` field can be used in member queries.
 
 >>> Animal.members.get(_member_name='FISH')
 <SmallHousePet.FISH: name='Nemo', description='Found at last', domesticated=True, facility='tank'>
->>> pp(list(Animal.members.filter(_member_name='RODENT')))
+>>> pp(Animal.members.filter(_member_name='RODENT'))
 [<SmallHousePet.RODENT: name='Freddy', description='The Golden One', domesticated=True, facility='cage'>]
 >>>
 
@@ -180,15 +169,17 @@ The ``_member_name`` field can be used in member queries.
 Primitive Collections
 =====================
 
-Model members may be rendered as primitive collections using the
-``values()`` and ``values_list()`` methods.
+Model members may be rendered as primitive collections.
+
+The ``members.all()`` method returns a sub-class of list with the
+methods ``values()`` and ``values_list()`` defined on it.
 
 >>> # Custom function for formatting primitive collections that returns
 >>> # the same results in python 2 and 3.
 >>> from staticmodel.util import jsonify
 >>>
 >>>
->>> jsonify(list(Animal.members.values()))
+>>> jsonify(Animal.members.all().values())
 [
   {
     "name": "Spot",
@@ -221,8 +212,15 @@ Model members may be rendered as primitive collections using the
     "domesticated": true
   }
 ]
->>>
->>> jsonify(list(Animal.members.values_list()))
+>>> jsonify(Animal.members.filter(name='Freddy').values())
+[
+  {
+    "name": "Freddy",
+    "description": "The Golden One",
+    "domesticated": true
+  }
+]
+>>> jsonify(Animal.members.all().values_list())
 [
   [
     "Spot",
@@ -257,27 +255,6 @@ Model members may be rendered as primitive collections using the
 ]
 >>>
 
-The primitive collections may be filtered by providing criteria.
-
->>> jsonify(list(Animal.members.values(criteria={'name': 'Freddy'})))
-[
-  {
-    "name": "Freddy",
-    "description": "The Golden One",
-    "domesticated": true
-  }
-]
->>>
-
-The same rules apply for ``criteria`` as for ``get()`` and ``filter()``
-with regard to valid fields.
-
->>> jsonify(list(Animal.members.values(criteria={'facility': 'tank'})))
-Traceback (most recent call last):
-    ...
-ValueError: Invalid field 'facility'
->>>
-
 Notice that when the ``Animal`` model was used to execute ``.values()`` or
 ``.values_list()``, the ``facility`` field was not included in the
 results. This is because the default fields for these methods is
@@ -286,7 +263,7 @@ the value of ``Animal._field_names``, which does not include ``facility``.
 Specific fields for ``.values()`` and ``.values_list()`` may be
 provided by passing them as positional parameters to those methods.
 
->>> jsonify(list(Animal.members.values('name', 'domesticated', 'facility')))
+>>> jsonify(Animal.members.all().values('name', 'domesticated', 'facility'))
 [
   {
     "name": "Spot",
@@ -315,8 +292,7 @@ provided by passing them as positional parameters to those methods.
     "facility": "cage"
   }
 ]
->>>
->>> jsonify(list(Animal.members.values_list('name', 'description', 'facility')))
+>>> jsonify(Animal.members.all().values_list('name', 'description', 'facility'))
 [
   [
     "Spot",
@@ -354,7 +330,7 @@ results.
 Members that don't have ANY of the fields are excluded from the
 results.
 
->>> jsonify(list(Animal.members.values('facility')))
+>>> jsonify(Animal.members.all().values('facility'))
 [
   {
     "facility": "tank"
@@ -364,7 +340,7 @@ results.
   }
 ]
 >>>
->>> jsonify(list(Animal.members.values_list('facility')))
+>>> jsonify(Animal.members.all().values_list('facility'))
 [
   [
     "tank"
@@ -378,7 +354,7 @@ results.
 The ``values_list()`` method can be passed the ``flat=True`` parameter
 to collapse the values in the result.
 
->>> jsonify(list(Animal.members.values_list('facility', flat=True)))
+>>> jsonify(Animal.members.all().values_list('facility', flat=True))
 [
   "tank",
   "cage"
@@ -388,7 +364,7 @@ Using the ``flat=True`` usually only makes sense when limiting the
 results to a single field name.
 
 >>>
->>> jsonify(list(Animal.members.values_list('name', 'description', flat=True)))
+>>> jsonify(Animal.members.all().values_list('name', 'description', flat=True))
 [
   "Spot",
   "Man's best friend",

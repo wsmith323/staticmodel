@@ -119,9 +119,9 @@ class StaticModelTests(TestCase):
         ])
 
     def test_values(self):
-        places_east_of_geneva = list(
-            place for place in PLACE.members.values('name', 'gis_location')
-            if place['gis_location'][1] > PLACE.GENEVA.gis_location[1])
+        places_east_of_geneva = [place for place in PLACE.members.all().values(
+            'name', 'gis_location')
+            if place['gis_location'][1] > PLACE.GENEVA.gis_location[1]]
         self.assertEqual(places_east_of_geneva, [{
             'name': 'Jerusalem',
             'gis_location': (31.77, 35.22)
@@ -131,8 +131,7 @@ class StaticModelTests(TestCase):
         }])
 
     def test_values_list(self):
-        descriptions = list(
-            OBJECT.members.values_list('description', flat=True))
+        descriptions = OBJECT.members.all().values_list('description', flat=True)
         self.assertEqual(descriptions, [
             "OBJECT.WAR, id=1, code='war': War",
             "OBJECT.PEACE, id=2, code='peace': Peace",
