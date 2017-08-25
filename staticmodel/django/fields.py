@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+
 import six
 
 
@@ -19,6 +20,18 @@ class StaticModelFieldMixin(object):
             self._value_field_name, self._display_field_name))
 
         super(StaticModelFieldMixin, self).__init__(*args, **kwargs)
+
+    @property
+    def static_model(self):
+        return self._static_model
+
+    @property
+    def value_field_name(self):
+        return self._value_field_name
+
+    @property
+    def display_field_name(self):
+        return self._display_field_name
 
     def deconstruct(self):
         name, path, args, kwargs = super(StaticModelFieldMixin, self).deconstruct()
@@ -87,3 +100,26 @@ class StaticModelIntegerField(StaticModelFieldMixin, models.IntegerField):
         if not isinstance(value, six.integer_types):
             raise ValueError('Field {!r} of member {!r} must be an integer.'.format(
                 self._value_field_name, member._member_name))
+
+
+try:
+    from south.modelsinspector import add_introspection_rules
+except ImportError:
+    pass
+else:
+    SOUTH_RULES = [
+      (
+        (StaticModelFieldMixin, ),
+        [],
+        {
+            "static_model": ["static_model", {'default': None}],
+            "value_field_name": ["value_field_name", {'default': None}],
+            "display_field_name": ["display_field_name", {'default': None}],
+        },
+      )
+    ]
+
+    add_introspection_rules(SOUTH_RULES, [
+        "^staticmodel\.django\.fields\.StaticModelCharField",
+        "^staticmodel\.django\.fields\.StaticModelIntegerField",
+    ])
