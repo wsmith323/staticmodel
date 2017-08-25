@@ -1,5 +1,12 @@
 Static Model release notes
 ===========================
+0.3.1
+=====
+ * Fix release notes.
+
+0.3.0
+=====
+ * Add support for South migrations.
 
 0.2.0
 =====
