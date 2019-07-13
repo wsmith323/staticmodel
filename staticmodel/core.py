@@ -14,6 +14,7 @@ from .util import format_kwargs
 class ATTR_NAME:
     class CLASS_VAR:
         ATTR_NAMES = '_field_names'
+
     class INSTANCE_VAR:
         MEMBER_NAME = '_member_name'
         RAW_VALUE = '_raw_value'
@@ -69,15 +70,6 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
     #
     # Public API
     #
-    class StaticModelError(Exception):
-        pass
-
-    class DoesNotExist(StaticModelError):
-        pass
-
-    class MultipleObjectsReturned(StaticModelError):
-        pass
-
     def __repr__(cls):
         return '<StaticModel {}: Members: {}, Fields: {}>'.format(
             cls.__name__, len(cls._members.by_id), cls._field_names)
@@ -125,14 +117,14 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                 "Value for 'member_name' parameter must be all uppercase.")
 
         if raw_value and isinstance(raw_value, Iterable) and not isinstance(
-                raw_value, str):
+                raw_value, six.string_types):
             field_values = raw_value
 
-        instance = super(StaticModelMeta, cls).__call__()
+        field_names = field_names or getattr(cls, '_field_names', None)
+        if not field_names:
+            raise ValueError("At lease one field must be defined")
 
-        field_names = field_names or cls._field_names or tuple(
-            'value{}'.format(i) for i in range(len(field_values)))
-        instance.__dict__.update(dict(zip(field_names, field_values)))
+        instance = super(StaticModelMeta, cls).__call__(**dict(zip(field_names, field_values)))
 
         setattr(instance, ATTR_NAME.INSTANCE_VAR.RAW_VALUE, raw_value)
 
@@ -172,11 +164,9 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                 cls._populate_ancestors(parent)
 
     def _process_new_instance(cls, member_name, instance):
-        instance_cn = getattr(instance, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, None)
-        if instance_cn and member_name and instance_cn != member_name:
-            raise ValueError(
-                'Constant value {!r} already has a member name'.format(
-                    instance))
+        instance_member_name = getattr(instance, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, None)
+        if instance_member_name and member_name and instance_member_name != member_name:
+            raise ValueError('Member {!r} already has a member name'.format(instance))
 
         setattr(instance, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, member_name)
 
@@ -226,8 +216,11 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                 try:
                     index = cls._indexes[field_name]
                 except KeyError:
-                    raise ValueError(
-                        'Invalid field {!r}'.format(field_name))
+                    if field_name in cls._field_names:
+                        continue
+                    else:
+                        raise cls.InvalidField(
+                            'Invalid field {!r}'.format(field_name))
                 else:
                     result = index.get(cls._index_key_for_value(field_value), [])
                     for item in result:
@@ -303,6 +296,21 @@ class StaticModel(six.with_metaclass(StaticModelMeta), object):
     """
     Base class for static models.
     """
+    class StaticModelError(Exception):
+        pass
+
+    class DoesNotExist(StaticModelError):
+        pass
+
+    class MultipleObjectsReturned(StaticModelError):
+        pass
+
+    class InvalidField(StaticModelError):
+        pass
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
     def __repr__(self):
         return '<{}.{}: {}>'.format(
             self.__class__.__name__,
