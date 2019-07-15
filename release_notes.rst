@@ -1,5 +1,10 @@
 Static Model release notes
 ===========================
+0.3.2
+=====
+ * Minor refactoring and bug fixes
+ * Documentation improvement
+
 0.3.1
 =====
  * Fix release notes.
