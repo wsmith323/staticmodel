@@ -1,5 +1,10 @@
 Static Model release notes
 ===========================
+0.3.3
+=====
+ * Fix pip install bug
+ * Fix cross-platform install bug
+
 0.3.2
 =====
  * Minor refactoring and bug fixes
