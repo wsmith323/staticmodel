@@ -1,3 +1,4 @@
 include README.rst
 include LICENSE.txt
 include release_notes.rst
+include staticmodel/VERSION.txt
