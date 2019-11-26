@@ -9,7 +9,7 @@ def file_read(filename):
         return flo.read()
 
 
-__version__ = file_read('staticmodel/VERSION.txt').strip()
+__version__ = file_read(os.path.join('staticmodel', 'VERSION.txt')).strip()
 
 
 setup(
