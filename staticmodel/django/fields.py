@@ -14,7 +14,7 @@ class StaticModelFieldMixin(object):
                                        self._static_model._field_names[0])
         self._display_field_name = kwargs.pop('display_field_name',
                                               self._value_field_name)
-        self._validate_field_values()
+        self._validate_field_values(*args, **kwargs)
 
         kwargs['choices'] = tuple(self._static_model.members.all().values_list(
             self._value_field_name, self._display_field_name))
@@ -46,10 +46,10 @@ class StaticModelFieldMixin(object):
 
         return name, path, args, kwargs
 
-    def _validate_field_values(self):
+    def _validate_field_values(self, *constructor_args, **constructor_kwargs):
         for member in self._static_model.members.all():
             value = getattr(member, self._value_field_name, None)
-            self._validate_member_value(member, value)
+            self._validate_member_value(member, value, *constructor_args, **constructor_kwargs)
 
             display_value = getattr(member, self._display_field_name, None)
             if not isinstance(display_value, six.string_types):
@@ -57,7 +57,7 @@ class StaticModelFieldMixin(object):
                     'Field {!r} of member {!r} must be a string.'.format(
                     self._display_field_name, member._member_name))
 
-    def _validate_member_value(self, member, value):
+    def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
         raise NotImplementedError
 
     def get_prep_value(self, member):
@@ -88,15 +88,29 @@ class StaticModelFieldMixin(object):
         setattr(cls, 'get_{}_display'.format(self.name), _get_FIELD_display)
 
 
-class StaticModelCharField(StaticModelFieldMixin, models.CharField):
-    def _validate_member_value(self, member, value):
+class StaticModelStringFieldMixin(StaticModelFieldMixin):
+    def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
         if not isinstance(value, six.string_types):
             raise ValueError('Field {!r} of member {!r} must be a string.'.format(
                 self._value_field_name, member._member_name))
 
 
+class StaticModelCharField(StaticModelStringFieldMixin, models.CharField):
+    def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
+        super(StaticModelCharField, self)._validate_member_value(
+            member, value, *constructor_args, **constructor_kwargs)
+        max_length = constructor_kwargs.get('max_length')
+        if max_length is not None and len(value) > max_length:
+            raise ValueError('Length of field {!r} of member {!r} must be <= {}'.format(
+                self._value_field_name, member._member_name, max_length))
+
+
+class StaticModelTextField(StaticModelStringFieldMixin, models.TextField):
+    pass
+
+
 class StaticModelIntegerField(StaticModelFieldMixin, models.IntegerField):
-    def _validate_member_value(self, member, value):
+    def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
         if not isinstance(value, six.integer_types):
             raise ValueError('Field {!r} of member {!r} must be an integer.'.format(
                 self._value_field_name, member._member_name))
