@@ -15,7 +15,8 @@ __version__ = file_read(os.path.join('staticmodel', 'VERSION.txt')).strip()
 setup(
     name="staticmodel",
     version=__version__,
-    packages=find_packages(exclude=['tests', 'docs']),
+    packages=find_packages(
+        exclude=['docs', 'tests', 'test_django_integration', 'django_test_app']),
     include_package_data=True,
     install_requires=['six'],
     author="Warren A. Smith",

@@ -281,14 +281,14 @@ class StaticModelMemberManager(object):
                 return None
             else:
                 raise self.model.DoesNotExist(
-                    '{}.get({}) yielded no objects.'.format(
+                    '{}.members.get({}) yielded no objects.'.format(
                         self.model.__name__, format_kwargs(kwargs)))
 
         elif len(results) == 1:
             return results[0]
         else:
             raise self.model.MultipleObjectsReturned(
-                '{}.get({}) yielded multiple objects.'.format(
+                '{}.members.get({}) yielded multiple objects.'.format(
                     self.model.__name__, format_kwargs(kwargs)))
 
 
