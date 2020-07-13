@@ -712,12 +712,12 @@ is returned.
 ...     AnimalType.members.get(name='Eagle')
 ... except AnimalType.DoesNotExist as e:
 ...     print(e)
-AnimalType.get(name='Eagle') yielded no objects.
+AnimalType.members.get(name='Eagle') yielded no objects.
 >>> try:
 ...     AnimalType.members.get(domesticated=True)
 ... except AnimalType.MultipleObjectsReturned as e:
 ...     print(e)
-AnimalType.get(domesticated=True) yielded multiple objects.
+AnimalType.members.get(domesticated=True) yielded multiple objects.
 
 ----------------------
 The _member_name field
