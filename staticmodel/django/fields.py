@@ -42,7 +42,7 @@ class StaticModelFieldMixin(object):
             display_field_name=self._display_field_name,
         ))
 
-        del kwargs["choices"]
+        # del kwargs["choices"]
 
         return name, path, args, kwargs
 
@@ -60,23 +60,23 @@ class StaticModelFieldMixin(object):
     def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
         raise NotImplementedError
 
-    def get_prep_value(self, member):
-        return super(StaticModelFieldMixin, self).get_prep_value(
-            getattr(member, self._value_field_name))
-
-    def to_python(self, db_value):
-        super_value = super(StaticModelFieldMixin, self).to_python(db_value)
-        try:
-            return self._static_model.members.get(
-                **{self._value_field_name: super_value})
-        except self._static_model.DoesNotExist:
-            return None
+    def get_prep_value(self, value):
+        if isinstance(value, self._static_model):
+            return getattr(value, self._value_field_name)
+        else:
+            return value
 
     def from_db_value(self, value, expression, connection, context):
-        try:
+        if value is None:
+            return value
+        else:
             return self._static_model.members.get(**{self._value_field_name: value})
-        except self._static_model.DoesNotExist:
-            return None
+
+    def to_python(self, db_value):
+        if db_value is None or isinstance(db_value, self._static_model):
+            return db_value
+        else:
+            return self._static_model.members.get(**{self._value_field_name: db_value})
 
     def contribute_to_class(self, cls, name, **kwargs):
         super(StaticModelFieldMixin, self).contribute_to_class(cls, name, **kwargs)
@@ -96,6 +96,9 @@ class StaticModelStringFieldMixin(StaticModelFieldMixin):
 
 
 class StaticModelCharField(StaticModelStringFieldMixin, models.CharField):
+    def get_internal_type(self):
+        return 'CharField'
+
     def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
         super(StaticModelCharField, self)._validate_member_value(
             member, value, *constructor_args, **constructor_kwargs)
@@ -106,10 +109,14 @@ class StaticModelCharField(StaticModelStringFieldMixin, models.CharField):
 
 
 class StaticModelTextField(StaticModelStringFieldMixin, models.TextField):
-    pass
+    def get_internal_type(self):
+        return 'TextField'
 
 
 class StaticModelIntegerField(StaticModelFieldMixin, models.IntegerField):
+    def get_internal_type(self):
+        return 'IntegerField'
+
     def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
         if not isinstance(value, six.integer_types):
             raise ValueError('Field {!r} of member {!r} must be an integer.'.format(
