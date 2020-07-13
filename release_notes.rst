@@ -1,5 +1,12 @@
 Static Model release notes
 ===========================
+0.4.0
+=====
+ * Add new django field StaticModelTextField.
+ * Add tests for django integration.
+ * Fix bugs in django integration.
+ * Fix minor bug in .members.get() error message.
+
 0.3.3
 =====
  * Fix pip install bug
