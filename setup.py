@@ -25,7 +25,6 @@ setup(
     license="MIT",
     keywords="static constant model enum django",
     url="https://github.com/wsmith323/staticmodel",
-    test_suite="tests",
     classifiers=[
             # How mature is this project? Common values are
             #   3 - Alpha
