@@ -290,7 +290,8 @@ class StaticModelMemberManager(object):
                     self.model.__name__, format_kwargs(kwargs)))
 
 
-class StaticModel(six.with_metaclass(StaticModelMeta), object):
+@six.add_metaclass(StaticModelMeta)
+class StaticModel(object):
     """
     Base class for static models.
     """
