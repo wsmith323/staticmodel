@@ -11,11 +11,11 @@ from .compat.simplenamespace import SimpleNamespace
 from .util import format_kwargs
 
 
-class ATTR_NAME:
-    class CLASS_VAR:
-        ATTR_NAMES = '_field_names'
+class AttrName:
+    class CLASS:
+        FIELD_NAMES = '_field_names'
 
-    class INSTANCE_VAR:
+    class INSTANCE:
         MEMBER_NAME = '_member_name'
         RAW_VALUE = '_raw_value'
 
@@ -126,7 +126,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
 
         instance = super(StaticModelMeta, cls).__call__(**dict(zip(field_names, field_values)))
 
-        setattr(instance, ATTR_NAME.INSTANCE_VAR.RAW_VALUE, raw_value)
+        setattr(instance, AttrName.INSTANCE.RAW_VALUE, raw_value)
 
         cls._process_new_instance(member_name, instance)
 
@@ -157,18 +157,18 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                     continue
                 for member in cls._members.by_id.values():
                     member_name = getattr(
-                        member, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, None)
+                        member, AttrName.INSTANCE.MEMBER_NAME, None)
                     if member_name is not None:
                         setattr(parent, member_name, member)
                 parent.register_submodel(cls)
                 cls._populate_ancestors(parent)
 
     def _process_new_instance(cls, member_name, instance):
-        instance_member_name = getattr(instance, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, None)
+        instance_member_name = getattr(instance, AttrName.INSTANCE.MEMBER_NAME, None)
         if instance_member_name and member_name and instance_member_name != member_name:
             raise ValueError('Member {!r} already has a member name'.format(instance))
 
-        setattr(instance, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, member_name)
+        setattr(instance, AttrName.INSTANCE.MEMBER_NAME, member_name)
 
         cls._members.by_id[id(instance)] = instance
         if member_name is not None:
@@ -176,7 +176,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         cls._index_instance(instance)
 
     def _index_instance(cls, instance):
-        for index_attr in (ATTR_NAME.INSTANCE_VAR.RAW_VALUE, ) + cls._field_names:
+        for index_attr in (AttrName.INSTANCE.RAW_VALUE,) + cls._field_names:
             index = cls._indexes.setdefault(index_attr, OrderedDict())
             try:
                 value = getattr(instance, index_attr)
@@ -198,10 +198,10 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         # other indexes if we miss there.
         sorted_kwargs = sorted(
             criteria.items(),
-            key=lambda x: x[0] != ATTR_NAME.INSTANCE_VAR.MEMBER_NAME)
+            key=lambda x: x[0] != AttrName.INSTANCE.MEMBER_NAME)
 
         for field_name, field_value in sorted_kwargs:
-            if field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME:
+            if field_name == AttrName.INSTANCE.MEMBER_NAME:
                 index = cls._members.by_member_name
                 try:
                     result = index[field_value]
@@ -251,7 +251,7 @@ class StaticModelMemberManager(object):
         validated_member_ids = set()
         for member in index_search_results:
             for field_name, field_value in criteria.items():
-                if (field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME and
+                if (field_name == AttrName.INSTANCE.MEMBER_NAME and
                         self.model._members.by_member_name.get(
                             field_value) is member):
                     continue
@@ -313,7 +313,7 @@ class StaticModel(object):
     def __repr__(self):
         return '<{}.{}: {}>'.format(
             self.__class__.__name__,
-            getattr(self, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
+            getattr(self, AttrName.INSTANCE.MEMBER_NAME),
             format_kwargs(self._as_dict),
         )
 
@@ -338,8 +338,8 @@ class StaticModelMembers(list):
             field_names = self.model._field_names
 
         elif not frozenset(field_names).issubset(frozenset(chain(
-                (ATTR_NAME.INSTANCE_VAR.MEMBER_NAME,
-                 ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
+                (AttrName.INSTANCE.MEMBER_NAME,
+                 AttrName.INSTANCE.MEMBER_NAME),
                 chain(self.model.__dict__.keys(), self.model._field_names),
                 chain.from_iterable(chain(
                     submodel.__dict__.keys(), submodel._field_names)
