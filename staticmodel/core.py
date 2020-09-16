@@ -371,8 +371,6 @@ class StaticModelMembers(list):
     def _values_list_item(item, field_names):
         rendered_item = []
         for field_name in field_names:
-            field_value = getattr(item, field_name, None)
-            if field_value is not None:
-                rendered_item.append(field_value)
+            rendered_item.append(getattr(item, field_name, None))
         return tuple(rendered_item)
     values_list = partialmethod(_values_base, _values_list_item, allow_flat=True)
