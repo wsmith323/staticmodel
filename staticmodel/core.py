@@ -314,10 +314,14 @@ class StaticModel(object):
         return '<{}.{}: {}>'.format(
             self.__class__.__name__,
             getattr(self, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
-            format_kwargs(OrderedDict(
-                (field_name, getattr(self, field_name, None))
-                for field_name in self._field_names)),
+            format_kwargs(self._as_dict),
         )
+
+    @property
+    def _as_dict(self):
+        return OrderedDict(
+            (field_name, getattr(self, field_name, None))
+            for field_name in self._field_names)
 
 
 class StaticModelMembers(list):
@@ -360,12 +364,8 @@ class StaticModelMembers(list):
         return results
 
     def _values_item(item, field_names):
-        rendered_item = []
-        for field_name in field_names:
-            field_value = getattr(item, field_name, None)
-            if field_value is not None:
-                rendered_item.append((field_name, field_value))
-        return OrderedDict(rendered_item)
+        return OrderedDict((key, value) for key, value in item._as_dict.items()
+                           if key in field_names)
     values = partialmethod(_values_base, _values_item)
 
     def _values_list_item(item, field_names):
