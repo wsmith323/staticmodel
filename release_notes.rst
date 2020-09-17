@@ -1,5 +1,10 @@
 Static Model release notes
 ===========================
+
+0.4.1
+=====
+* Refactor test execution.
+
 0.4.0
 =====
  * Add new django field StaticModelTextField.
