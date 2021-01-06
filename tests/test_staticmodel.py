@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from staticmodel import StaticModel
+from staticmodel.compat.simplenamespace import SimpleNamespace
 
 
 class OBJECT(StaticModel):
@@ -24,13 +25,13 @@ class OBJECT(StaticModel):
 
 
 class PLACE(OBJECT):
-    _field_names = OBJECT._field_names + ('gis_location', 'continent')
+    _field_names = OBJECT._field_names + ('gis_location', 'continent', 'known_for', )
     _index_field_names = _field_names
 
-    JERUSALEM = 5, 'jerusalem', 'Jerusalem', (31.77, 35.22), 'Asia'
-    GENEVA = 6, 'geneva', 'Geneva', (46.2, 6.15), 'Europe'
-    AUSCHWITZ = 7, 'auschwitz', 'Auschwitz', (50.04, 19.18), 'Europe'
-    PARIS = 8, 'paris', 'Paris', (48.85, 2.35), 'Europe'
+    JERUSALEM = 5, 'jerusalem', 'Jerusalem', (31.77, 35.22), 'Asia', OBJECT.WAR
+    GENEVA = 6, 'geneva', 'Geneva', (46.2, 6.15), 'Europe', OBJECT.PEACE
+    AUSCHWITZ = 7, 'auschwitz', 'Auschwitz', (50.04, 19.18), 'Europe', OBJECT.HATE
+    PARIS = 8, 'paris', 'Paris', (48.85, 2.35), 'Europe', OBJECT.LOVE
 
     _label = 'Where'
 
@@ -102,13 +103,47 @@ class PERSON(OBJECT):
                     person is not self and self in person.parents)
 
 
+class TYPES(OBJECT):
+    _field_names = OBJECT._field_names + ("type",)
+    TYPE = 21, "type", "Type", type
+    CLASS = 22, "class", "Class", OBJECT
+    FUNCTION = 23, "function", "Function", len
+    METHOD = 24, "method", "Method", OBJECT.members.filter
+
+
+class MUTABLE(OBJECT):
+    _field_names = OBJECT._field_names + ("obj",)
+    LIST = 25, "list", "List", ['a', 'b', 'c']
+    DICT = 26, "class", "Dict", {item: item for item in LIST[3]}
+    NAMESPACE = 27, "namespace", "Namespace", SimpleNamespace(**DICT[3])
+
+
 class StaticModelTests(TestCase):
     maxDiff = None
     # TODO: Increase test coverage
 
     def test_get(self):
-        result = PLACE.members.get(continent='Asia')
+        result = PLACE.members.get(continent='Asia', known_for=OBJECT.WAR)
         self.assertIs(result, PLACE.JERUSALEM)
+
+    def test_get_non_existent(self):
+        self.assertRaises(PLACE.DoesNotExist, PLACE.members.get, continent='Australia')
+
+    def test_get_multiples(self):
+        self.assertRaises(PLACE.MultipleObjectsReturned, PLACE.members.get, continent='Europe')
+
+    def test_type_values(self):
+        result = TYPES.members.get(type=OBJECT)
+        self.assertIs(result, TYPES.CLASS)
+        self.assertIs(result.type, OBJECT)
+
+        result = result.type.members.get(code="function")
+        self.assertIs(result, TYPES.FUNCTION)
+        self.assertIs(result.type, len)
+
+    def test_mutable_values(self):
+        result = MUTABLE.members.get(obj=['a', 'b', 'c'])
+        self.assertIs(result, MUTABLE.LIST)
 
     def test_filter(self):
         results = list(
@@ -167,4 +202,11 @@ class StaticModelTests(TestCase):
             " Parent(s): Person 5, Person 6",
             "PERSON.PERSON_8, id=20, code='person_8': Who: Person 8;"
             " Parent(s): Person 5, Person 6",
+            "TYPES.TYPE, id=21, code='type': Type",
+            "TYPES.CLASS, id=22, code='class': Class",
+            "TYPES.FUNCTION, id=23, code='function': Function",
+            "TYPES.METHOD, id=24, code='method': Method",
+            "MUTABLE.LIST, id=25, code='list': List",
+            "MUTABLE.DICT, id=26, code='class': Dict",
+            "MUTABLE.NAMESPACE, id=27, code='namespace': Namespace",
         ])
