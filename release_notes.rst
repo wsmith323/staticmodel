@@ -1,6 +1,13 @@
 Static Model release notes
 ===========================
 
+0.5.0
+=====
+* Remove misguided calling of callables during member indexing.
+* Correct and simplify index key generation.
+* Enable ignored tests.
+* Increase test coverage.
+
 0.4.1
 =====
 * Refactor test execution.
