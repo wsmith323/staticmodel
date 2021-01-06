@@ -183,16 +183,14 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
             except AttributeError:
                 continue
             else:
-                if callable(value):
-                    value = value()
-                if isinstance(value, cls) or isinstance(value.__class__, cls.__class__):
-                    key = id(value)
-                else:
-                    key = cls._index_key_for_value(value)
+                key = cls._index_key_for_value(value)
                 index.setdefault(key, []).append(instance)
 
-    def _index_key_for_value(cls, obj):
-        return str(obj)
+    def _index_key_for_value(cls, value):
+        try:
+            return hash(value)
+        except TypeError:
+            return hash(repr(value))
 
     def _get_index_search_results(cls, criteria):
         # Make sure ATTR_NAME.INSTANCE_VAR.MEMBER_NAME gets processed
