@@ -5,13 +5,13 @@ from django_test_app.models import Integer, String, TestModel
 
 class CharFieldTest(TestCase):
     def setUp(self):
-        TestModel.objects.create(name='Test Object 1', char=String.VALUE_1.code)
+        TestModel.objects.create(name='Test Object 1', char=String.VALUE_1)
         TestModel.objects.create(name='Test Object 2', char=String.VALUE_2.code)
         TestModel.objects.create(name='Test Null Object')
 
     def test_read(self):
         object1 = TestModel.objects.get(char=String.VALUE_1)
-        object2 = TestModel.objects.get(char=String.VALUE_2)
+        object2 = TestModel.objects.get(char=String.VALUE_2.code)
         object3 = TestModel.objects.get(char__isnull=True)
 
         self.assertIs(object1.char, String.VALUE_1)
@@ -52,13 +52,13 @@ class CharFieldTest(TestCase):
 
 class TestFieldTest(TestCase):
     def setUp(self):
-        TestModel.objects.create(name='Test Object 1', text=String.VALUE_1.code)
+        TestModel.objects.create(name='Test Object 1', text=String.VALUE_1)
         TestModel.objects.create(name='Test Object 2', text=String.VALUE_2.code)
         TestModel.objects.create(name='Test Null Object')
 
     def test_read(self):
         object1 = TestModel.objects.get(text=String.VALUE_1)
-        object2 = TestModel.objects.get(text=String.VALUE_2)
+        object2 = TestModel.objects.get(text=String.VALUE_2.code)
         object3 = TestModel.objects.get(text__isnull=True)
 
         self.assertIs(object1.text, String.VALUE_1)
@@ -99,13 +99,13 @@ class TestFieldTest(TestCase):
 
 class IntegerFieldTest(TestCase):
     def setUp(self):
-        TestModel.objects.create(name='Test Object 1', integer=Integer.VALUE_1.value)
+        TestModel.objects.create(name='Test Object 1', integer=Integer.VALUE_1)
         TestModel.objects.create(name='Test Object 2', integer=Integer.VALUE_2.value)
         TestModel.objects.create(name='Test Null Object')
 
     def test_read(self):
         object1 = TestModel.objects.get(integer=Integer.VALUE_1)
-        object2 = TestModel.objects.get(integer=Integer.VALUE_2)
+        object2 = TestModel.objects.get(integer=Integer.VALUE_2.value)
         object3 = TestModel.objects.get(integer__isnull=True)
         
         self.assertIs(object1.integer, Integer.VALUE_1)
