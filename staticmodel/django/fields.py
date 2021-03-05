@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.core.exceptions import ValidationError
 from django.db import models
 
 import six
@@ -77,6 +78,22 @@ class StaticModelFieldMixin(object):
             return db_value
         else:
             return self._static_model.members.get(**{self._value_field_name: db_value})
+
+    def clean(self, value, model_instance):
+        if isinstance(value, self._static_model):
+            db_value = getattr(value, self._value_field_name)
+            sm_value = value
+        else:
+            db_value = value
+            try:
+                sm_value = self.to_python(value)
+            except self._static_model.DoesNotExist:
+                raise ValidationError("{} member not found for {}={!r}".format(
+                    self._static_model.__name__, self._value_field_name, value))
+
+        self.validate(db_value, model_instance)
+        self.run_validators(db_value)
+        return sm_value
 
     def contribute_to_class(self, cls, name, **kwargs):
         super(StaticModelFieldMixin, self).contribute_to_class(cls, name, **kwargs)
