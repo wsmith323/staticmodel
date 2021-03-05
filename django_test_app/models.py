@@ -1,7 +1,7 @@
 from django.db import models
 
 from staticmodel import StaticModel
-from staticmodel.django.fields import (
+from staticmodel.django.models import (
     StaticModelCharField, StaticModelIntegerField,
     StaticModelTextField,
 )
