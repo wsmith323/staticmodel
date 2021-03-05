@@ -1,6 +1,13 @@
 Static Model release notes
 ===========================
 
+0.6.0
+=====
+* Add support for model validation to django model fields.
+* Move canonical location of Django model fields to staticmodel.django.models.
+* Add Django Rest Framework serializer fields.
+* Minor fixes to Django model docstring.
+
 0.5.0
 =====
 * Remove misguided calling of callables during member indexing.
