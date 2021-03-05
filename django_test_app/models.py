@@ -22,10 +22,10 @@ class Integer(StaticModel):
 
 
 class TestModel(models.Model):
-    name = models.CharField(max_length=10, unique=True)
+    name = models.CharField(max_length=20, unique=True)
     char = StaticModelCharField(static_model=String, value_field_name='code',
-                                display_field_name='display', max_length=10, null=True)
+                                display_field_name='display', max_length=10, null=True, blank=True)
     text = StaticModelTextField(static_model=String, value_field_name='code',
-                                display_field_name='display', null=True)
+                                display_field_name='display', null=True, blank=True)
     integer = StaticModelIntegerField(static_model=Integer, value_field_name='value',
-                                      display_field_name='display', null=True)
+                                      display_field_name='display', null=True, blank=True)

@@ -1,5 +1,7 @@
 from unittest.case import TestCase
 
+from django.core.exceptions import ValidationError
+
 from django_test_app.models import Integer, String, TestModel
 
 
@@ -46,11 +48,26 @@ class CharFieldTest(TestCase):
         object2.refresh_from_db()
         self.assertIs(object2.char, String.VALUE_1)
 
+    def test_clean(self):
+        object1 = TestModel.objects.get(char=String.VALUE_1)
+
+        object1.char = String.VALUE_2
+        object1.full_clean()
+
+        object1.char = String.VALUE_3.code
+        object1.full_clean()
+
+        object1.char = 'bad'
+        self.assertRaises(ValidationError, object1.full_clean)
+
+        object1.char = 1
+        self.assertRaises(ValidationError, object1.full_clean)
+
     def tearDown(self):
         TestModel.objects.all().delete()
 
 
-class TestFieldTest(TestCase):
+class TextFieldTest(TestCase):
     def setUp(self):
         TestModel.objects.create(name='Test Object 1', text=String.VALUE_1)
         TestModel.objects.create(name='Test Object 2', text=String.VALUE_2.code)
@@ -92,6 +109,21 @@ class TestFieldTest(TestCase):
         object2.save()
         object2.refresh_from_db()
         self.assertIs(object2.text, String.VALUE_1)
+
+    def test_clean(self):
+        object1 = TestModel.objects.get(text=String.VALUE_1)
+
+        object1.text = String.VALUE_2
+        object1.full_clean()
+
+        object1.text = String.VALUE_3.code
+        object1.full_clean()
+
+        object1.text = 'bad'
+        self.assertRaises(ValidationError, object1.full_clean)
+
+        object1.text = 1
+        self.assertRaises(ValidationError, object1.full_clean)
 
     def tearDown(self):
         TestModel.objects.all().delete()
@@ -139,6 +171,23 @@ class IntegerFieldTest(TestCase):
         object2.save()
         object2.refresh_from_db()
         self.assertIs(object2.integer, Integer.VALUE_1)
+
+    def test_clean(self):
+        object1 = TestModel.objects.get(integer=Integer.VALUE_1)
+
+        object1.integer = Integer.VALUE_2
+        object1.full_clean()
+        self.assertIs(object1.integer, Integer.VALUE_2)
+
+        object1.integer = Integer.VALUE_3.value
+        object1.full_clean()
+        self.assertIs(object1.integer, Integer.VALUE_3)
+
+        object1.integer = 'bad'
+        self.assertRaises(ValidationError, object1.full_clean)
+
+        object1.integer = 0
+        self.assertRaises(ValidationError, object1.full_clean)
 
     def tearDown(self):
         TestModel.objects.all().delete()
