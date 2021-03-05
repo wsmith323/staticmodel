@@ -35,19 +35,21 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ValidationError
 from django.db import models
-
 import six
+
+from staticmodel import StaticModel
 
 
 class StaticModelFieldMixin(object):
     def __init__(self, *args, **kwargs):
         self._static_model = kwargs.pop('static_model', None)
-        assert self._static_model, 'static_model required'
+        if not self._static_model:
+            raise ValueError('static_model required')
+        if not issubclass(self._static_model, StaticModel):
+            raise ValueError('static_model must be subclass of StaticModel')
 
-        self._value_field_name = kwargs.pop('value_field_name',
-                                       self._static_model._field_names[0])
-        self._display_field_name = kwargs.pop('display_field_name',
-                                              self._value_field_name)
+        self._value_field_name = kwargs.pop('value_field_name', self._static_model._field_names[0])
+        self._display_field_name = kwargs.pop('display_field_name', self._value_field_name)
         self._validate_field_values(*args, **kwargs)
 
         kwargs['choices'] = tuple(self._static_model.members.all().values_list(
