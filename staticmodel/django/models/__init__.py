@@ -31,3 +31,4 @@ contain a value appropriate for the value of the field. This ensures
 that error-causing inconsistencies are detected early during
 development.
 """
+from .fields import StaticModelCharField, StaticModelIntegerField, StaticModelTextField
