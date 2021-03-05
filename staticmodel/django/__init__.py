@@ -1,19 +1,20 @@
 """
-******************
-Django integration
-******************
+************************
+Django model integration
+************************
 
-**Static Model** provides two custom Django model fields in the
-``staticmodel.django.fields`` module:
+**Static Model** provides custom Django model fields in the
+``staticmodel.django.models`` package:
 
  * ``StaticModelCharField`` (sub-class of ``django.db.models.CharField``)
+ * ``StaticModelTextField`` (sub-class of ``django.db.models.TextField``)
  * ``StaticModelIntegerField`` (sub-class of ``django.db.models.IntegerField``)
 
 Static model members are returned, and can be set, as the value of the
 fields on a django model object.
 
-Both fields take the following keyword arguments in addition to the
-arguments taken by their respective sub-classes:
+All fields take the following keyword arguments in addition to the
+arguments taken by their respective parent classes:
 
  * ``static_model``: The static model class associated with this field.
  * ``value_field_name``: The static model field name whose value will
