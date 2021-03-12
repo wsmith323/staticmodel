@@ -1,6 +1,12 @@
 Static Model release notes
 ===========================
 
+0.6.1
+=====
+* Add tests for Django Rest Framework serializer fields.
+* Fix bugs in Django Rest Framework serializer fields.
+* Add DRF version clarification to serializer module docstring.
+
 0.6.0
 =====
 * Add support for model validation to django model fields.
