@@ -3,7 +3,7 @@
 Django Rest Framework integration
 *********************************
 
-**Static Model** provides custom DRF serializer fields in the
+**Static Model** provides custom DRF (2.x) serializer fields in the
 ``staticmodel.django.rest_framework.serializers`` module:
 
  * ``StaticModelCharField`` (sub-class of ``rest_framework.serializers.CharField``)
@@ -25,6 +25,7 @@ arguments taken by their respective parent classes:
    static model member when deserializing. Defaults to the first field
    name in ``static_model._field_names``.
 """
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from staticmodel import StaticModel
 
@@ -50,10 +51,21 @@ class StaticModelFieldMixin(object):
         super().__init__(*args, **kwargs)
 
     def to_native(self, value):
-        return getattr(value, self._lookup_field_name)
+        if value is None:
+            return value
+        elif isinstance(value, self._static_model):
+            return getattr(value, self._lookup_field_name)
+        else:
+            raise ValueError("Invalid value for 'value' parameter")
 
     def from_native(self, value):
-        return self._static_model.members.get(**{self._lookup_field_name: value})
+        if value is None:
+            return value
+        else:
+            try:
+                return self._static_model.members.get(**{self._lookup_field_name: value})
+            except self._static_model.DoesNotExist as e:
+                raise ValidationError("Value {!r} is invalid".format(value))
 
 
 class StaticModelCharField(StaticModelFieldMixin, serializers.CharField):
