@@ -1,7 +1,7 @@
 """
-*********************************
-Django Rest Framework integration
-*********************************
+***************************************
+Django Rest Framework serializer fields
+***************************************
 
 **Static Model** provides custom DRF (2.x) serializer fields in the
 ``staticmodel.django.rest_framework.serializers`` module:
