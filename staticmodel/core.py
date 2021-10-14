@@ -244,6 +244,9 @@ class StaticModelMemberManager(object):
             self.model._members.by_id.values(), model=self.model)
 
     def filter(self, **criteria):
+        if not criteria:
+            return self.all()
+
         index_search_results = self.model._get_index_search_results(criteria)
 
         results = []
