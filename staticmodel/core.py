@@ -292,6 +292,24 @@ class StaticModelMemberManager(object):
                 '{}.members.get({}) yielded multiple objects.'.format(
                     self.model.__name__, format_kwargs(kwargs)))
 
+    def choices(self, *fields, **criteria):
+        if len(fields) > 2:
+            raise ValueError(
+                'Maximum number of specified fields for {0}.members.choices() is 2'.format(
+                    self.model.__name__))
+        if fields:
+            for field in fields:
+                if field not in self.model._field_names:
+                    raise ValueError('{0}.members.choices() requires {0} field name(s)'.format(
+                        self.model.__name__))
+        else:
+            fields = self.model._field_names[:2]
+
+        if len(fields) < 2:
+            fields = [fields[0], fields[0]]
+
+        return self.filter(**criteria).values_list(*fields)
+
 
 @six.add_metaclass(StaticModelMeta)
 class StaticModel(object):
