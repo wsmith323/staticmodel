@@ -364,8 +364,8 @@ class StaticModelMembers(list):
         return results
 
     def _values_item(item, field_names):
-        return OrderedDict((key, value) for key, value in item._as_dict.items()
-                           if key in field_names)
+        item_dict = item._as_dict
+        return OrderedDict((key, item_dict.pop(key, None)) for key in field_names)
     values = partialmethod(_values_base, _values_item)
 
     def _values_list_item(item, field_names):
