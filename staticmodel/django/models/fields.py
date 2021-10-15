@@ -31,29 +31,27 @@ contain a value appropriate for the value of the field. This ensures
 that error-causing inconsistencies are detected early during
 development.
 """
-from __future__ import unicode_literals
-
 from django.core.exceptions import ValidationError
 from django.db import models
-
-import six
+from staticmodel import StaticModel
 
 
 class StaticModelFieldMixin(object):
     def __init__(self, *args, **kwargs):
         self._static_model = kwargs.pop('static_model', None)
-        assert self._static_model, 'static_model required'
+        if not self._static_model:
+            raise ValueError('static_model required')
+        if not issubclass(self._static_model, StaticModel):
+            raise ValueError('static_model must be subclass of StaticModel')
 
-        self._value_field_name = kwargs.pop('value_field_name',
-                                       self._static_model._field_names[0])
-        self._display_field_name = kwargs.pop('display_field_name',
-                                              self._value_field_name)
+        self._value_field_name = kwargs.pop('value_field_name', self._static_model._field_names[0])
+        self._display_field_name = kwargs.pop('display_field_name', self._value_field_name)
         self._validate_field_values(*args, **kwargs)
 
-        kwargs['choices'] = tuple(self._static_model.members.all().values_list(
+        kwargs['choices'] = tuple(self._static_model.members.choices(
             self._value_field_name, self._display_field_name))
 
-        super(StaticModelFieldMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @property
     def static_model(self):
@@ -68,7 +66,7 @@ class StaticModelFieldMixin(object):
         return self._display_field_name
 
     def deconstruct(self):
-        name, path, args, kwargs = super(StaticModelFieldMixin, self).deconstruct()
+        name, path, args, kwargs = super().deconstruct()
 
         kwargs.update(dict(
             static_model=self._static_model,
@@ -86,10 +84,10 @@ class StaticModelFieldMixin(object):
             self._validate_member_value(member, value, *constructor_args, **constructor_kwargs)
 
             display_value = getattr(member, self._display_field_name, None)
-            if not isinstance(display_value, six.string_types):
+            if not isinstance(display_value, str):
                 raise ValueError(
                     'Field {!r} of member {!r} must be a string.'.format(
-                    self._display_field_name, member._member_name))
+                        self._display_field_name, member._member_name))
 
     def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
         raise NotImplementedError
@@ -129,7 +127,7 @@ class StaticModelFieldMixin(object):
         return sm_value
 
     def contribute_to_class(self, cls, name, **kwargs):
-        super(StaticModelFieldMixin, self).contribute_to_class(cls, name, **kwargs)
+        super().contribute_to_class(cls, name, **kwargs)
 
         def _get_FIELD_display(instance):
             member = getattr(instance, self.attname)
@@ -140,7 +138,7 @@ class StaticModelFieldMixin(object):
 
 class StaticModelStringFieldMixin(StaticModelFieldMixin):
     def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
-        if not isinstance(value, six.string_types):
+        if not isinstance(value, str):
             raise ValueError('Field {!r} of member {!r} must be a string.'.format(
                 self._value_field_name, member._member_name))
 
@@ -150,7 +148,7 @@ class StaticModelCharField(StaticModelStringFieldMixin, models.CharField):
         return 'CharField'
 
     def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
-        super(StaticModelCharField, self)._validate_member_value(
+        super()._validate_member_value(
             member, value, *constructor_args, **constructor_kwargs)
         max_length = constructor_kwargs.get('max_length')
         if max_length is not None and len(value) > max_length:
@@ -168,29 +166,6 @@ class StaticModelIntegerField(StaticModelFieldMixin, models.IntegerField):
         return 'IntegerField'
 
     def _validate_member_value(self, member, value, *constructor_args, **constructor_kwargs):
-        if not isinstance(value, six.integer_types):
+        if not isinstance(value, int):
             raise ValueError('Field {!r} of member {!r} must be an integer.'.format(
                 self._value_field_name, member._member_name))
-
-
-try:
-    from south.modelsinspector import add_introspection_rules
-except ImportError:
-    pass
-else:
-    SOUTH_RULES = [
-      (
-        (StaticModelFieldMixin, ),
-        [],
-        {
-            "static_model": ["static_model", {'default': None}],
-            "value_field_name": ["value_field_name", {'default': None}],
-            "display_field_name": ["display_field_name", {'default': None}],
-        },
-      )
-    ]
-
-    add_introspection_rules(SOUTH_RULES, [
-        "^staticmodel\.django\.fields\.StaticModelCharField",
-        "^staticmodel\.django\.fields\.StaticModelIntegerField",
-    ])

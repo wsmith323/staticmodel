@@ -17,7 +17,6 @@ setup(
     version=__version__,
     packages=find_packages(exclude=['tests', 'docs']),
     include_package_data=True,
-    install_requires=['six'],
     author="Warren A. Smith",
     author_email="warren@wandrsmith.net",
     description="Static Models.",

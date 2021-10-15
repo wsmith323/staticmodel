@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from staticmodel import StaticModel
-from staticmodel.compat.simplenamespace import SimpleNamespace
+from types import SimpleNamespace
 
 
 class OBJECT(StaticModel):
@@ -38,7 +38,7 @@ class PLACE(OBJECT):
     @property
     def description(self):
         return '; '.join([
-            super(PLACE, self).description,
+            super().description,
             'Location: {}, {}'.format(*self.gis_location),
             self.continent,
         ])
@@ -57,7 +57,7 @@ class THING(OBJECT):
     @property
     def description(self):
         return '; '.join([
-            super(THING, self).description,
+            super().description,
             'Organic' if self.is_organic else 'Inorganic',
         ])
 
@@ -81,7 +81,7 @@ class PERSON(OBJECT):
         parents = self.parents
         children = self.children
         return '; '.join(chunk for chunk in (
-            super(PERSON, self).description,
+            super().description,
             'Parent(s): {}'.format(', '.join(
                 parent.name for parent in parents)) if parents else None,
             'Children: {}'.format(', '.join(

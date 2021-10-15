@@ -1,6 +1,25 @@
 Static Model release notes
 ===========================
 
+1.0.0
+=====
+IMPORTANT: This version is not backwards compatible with code using 0.x.
+           Attempts have been made below to specify potential breaking changes,
+           but there may be others. You have been warned.
+* All support for Python 2 has been removed.
+* The django.fields module has been removed. Use django.models.fields instead.
+* The members.filter() method now returns all members when called without
+  criteria.
+* Placeholders with a value of None are now inserted in results of
+  members.values() and members.values_list() when specified fields do not exist
+  on a member in the results.
+* Django Rest Framework serializer fields now require DRF 3.x API.
+* Django Rest Framework serializer fields can now serialize the entire static
+  model member, and handle the corresponding mapping in a representation.
+* A members.choices() method has been added as a shortcut for generating 2-item
+  tuples from static model members.
+* Documentation has been updated.
+
 0.6.1
 =====
 * Add tests for Django Rest Framework serializer fields.

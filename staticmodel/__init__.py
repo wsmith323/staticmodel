@@ -52,7 +52,6 @@ The problems using built-ins for complex constants
 Let's start with a couple of normal constants and then modify them
 as the code evolves.
 
->>> from __future__ import print_function
 >>> # Prettier collection display
 >>> from pprint import pprint as pp
 >>>
@@ -511,7 +510,10 @@ Another observation is that the behavior of the methods is entirely
 dependent upon each animal's type. Ideally, we should move the
 methods to the class of each type instance. We can do that with
 namedtuples, but we have to create a subclass of the generated
-class and then define our methods on it. *Is there a simpler way?*
+class and then define our methods on it. Providing all these sub-classes
+with behavior that applies to every member would require an additional
+mixin definition and inclusion of that mixin in the super-class list
+for each sub-class. *Is there a simpler way?*
 
 Also, suppose we want choice lists that only contain portions of the
 items, filtered on various combinations of attribute values. We could
@@ -558,11 +560,6 @@ To wet your appetite, lets take our existing code and refactor it using
 ...             return ("Swimming" if self.likes_to_swim
 ...                     else "{}s don't like to swim.".format(self.name))
 ...
-...     TYPE_CHOICES = Type.members.all().values_list('id', 'name')
-...     SWIMMER_TYPE_CHOICES = Type.members.filter(likes_to_swim=True).values_list('id', 'name')
-...     DOMESTICATED_TYPE_CHOICES = Type.members.filter(domesticated=True).values_list(
-...         'id', 'name')
-...
 ...     def __init__(self, name, animal_type):
 ...         self.name = name
 ...         self.type = animal_type
@@ -605,12 +602,7 @@ To wet your appetite, lets take our existing code and refactor it using
  "African Swallows don't like to swim.",
  "Cats don't like to swim.",
  'Swimming']
->>> pp(Animal.TYPE_CHOICES)
-[(1, 'Dog'), (2, 'African Swallow'), (3, 'Cat'), (4, 'Snake')]
->>> pp(Animal.SWIMMER_TYPE_CHOICES)
-[(1, 'Dog'), (4, 'Snake')]
->>> pp(Animal.DOMESTICATED_TYPE_CHOICES)
-[(1, 'Dog'), (3, 'Cat')]
+>>>
 
 Notice the lack of repetition in the constant declaration. Notice
 that the type-dependent behavior has been moved to the Type class
@@ -629,7 +621,7 @@ Static Models
 =============
 
 A static model is defined using a class definition to create
-a sub-class of staticmodel.StaticModel.
+a sub-class of ``staticmodel.StaticModel``.
 
 Member field names are declared with the ``_field_names`` class
 attribute. The value should be a sequence of strings.
@@ -649,14 +641,18 @@ instances of the model**.
 >>>
 >>>
 >>> class AnimalType(StaticModel):
-...     _field_names = 'name', 'description', 'domesticated'
+...     _field_names = 'name', 'description', 'domesticated', 'has_legs'
 ...     _WALKING_TEXT = "{} walking..."
 ...
-...     DOG = 'Dog', "Man's best friend", True
-...     CAT = 'Cat', "Man's gracious overlord", True
+...     DOG = 'Dog', "Man's best friend", True, True
+...     CAT = 'Cat', "Man's gracious overlord", True, True
+...     SNAKE = 'Snake', "Man's slithering companion", True, False
 ...
 ...     def walk(self):
-...         return self._WALKING_TEXT.format(self.name)
+...         if self.has_legs:
+...             return self._WALKING_TEXT.format(self.name)
+...         else:
+...             return "{} can't walk.".format(self.name)
 >>>
 
 =====================
@@ -667,22 +663,34 @@ If the member name (the attribute name of the member defined on the
 model) is known, it can be accessed just like any other attribute.
 
 >>> AnimalType.DOG
-<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True>
+<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True, has_legs=True>
+>>>
 
 The entire collection of members can be retrieved with the ``members.all()`` method.
 
 >>> pp(AnimalType.members.all())
-[<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True>,
- <AnimalType.CAT: name='Cat', description="Man's gracious overlord", domesticated=True>]
+[<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True, has_legs=True>,
+ <AnimalType.CAT: name='Cat', description="Man's gracious overlord", domesticated=True, has_legs=True>,
+ <AnimalType.SNAKE: name='Snake', description="Man's slithering companion", domesticated=True, has_legs=False>]
 >>> pp([item.walk() for item in AnimalType.members.all()])
-['Dog walking...', 'Cat walking...']
+['Dog walking...', 'Cat walking...', "Snake can't walk."]
+>>>
 
 Model members may be filtered with the model's ``members.filter()``
 method.
 
->>> pp(AnimalType.members.filter(domesticated=True))
-[<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True>,
- <AnimalType.CAT: name='Cat', description="Man's gracious overlord", domesticated=True>]
+>>> pp(AnimalType.members.filter(has_legs=True))
+[<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True, has_legs=True>,
+ <AnimalType.CAT: name='Cat', description="Man's gracious overlord", domesticated=True, has_legs=True>]
+>>>
+
+Providing no criteria to ``members.filter()`` is the same as calling
+``members.all()``.
+
+>>> pp(AnimalType.members.filter())
+[<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True, has_legs=True>,
+ <AnimalType.CAT: name='Cat', description="Man's gracious overlord", domesticated=True, has_legs=True>,
+ <AnimalType.SNAKE: name='Snake', description="Man's slithering companion", domesticated=True, has_legs=False>]
 >>>
 
 The ``members.all()`` and ``members.filter()`` methods return an empty
@@ -701,7 +709,7 @@ A single model member may be retrieved directly using the model's
 ``members.get()`` method.
 
 >>> AnimalType.members.get(name='Dog')
-<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True>
+<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True, has_legs=True>
 >>>
 
 The ``members.get()`` method raises ``<model>.DoesNotExist`` if the query
@@ -718,6 +726,44 @@ AnimalType.members.get(name='Eagle') yielded no objects.
 ... except AnimalType.MultipleObjectsReturned as e:
 ...     print(e)
 AnimalType.members.get(domesticated=True) yielded multiple objects.
+>>>
+
+The ``members.choices()`` method is a shortcut for generating lists of
+2 item tuples for use in Django field definitions, etc. By default, it
+returns all members and uses the first two fields defined on the model.
+
+>>> pp(AnimalType.members.choices())
+[('Dog', "Man's best friend"),
+ ('Cat', "Man's gracious overlord"),
+ ('Snake', "Man's slithering companion")]
+>>>
+
+If field names are specified, there must be no more than 2.
+
+>>> try:
+...     AnimalType.members.choices('name', 'description', 'domesticated')
+... except ValueError as e:
+...     print(e)
+Maximum number of specified fields for AnimalType.members.choices() is 2
+>>>
+
+If only a singe field name is provided, or if the model only has one
+field, then the same field is used for both items of the tuple.
+
+>>> pp(AnimalType.members.choices('name'))
+[('Dog', 'Dog'), ('Cat', 'Cat'), ('Snake', 'Snake')]
+>>>
+
+The ``members.choices()`` method may also be provided with criteria to
+limit the members included in the results, much like
+``members.filter()``.
+
+>>> pp(AnimalType.members.choices(has_legs=True))
+[('Dog', "Man's best friend"), ('Cat', "Man's gracious overlord")]
+>>> pp(AnimalType.members.choices('name', has_legs=True))
+[('Dog', 'Dog'), ('Cat', 'Cat')]
+>>>
+
 
 ----------------------
 The _member_name field
@@ -728,14 +774,15 @@ models is available as the ``_member_name`` field on the member.
 
 >>> AnimalType.DOG._member_name
 'DOG'
+>>>
 
 The ``_member_name`` field *can* be used in member queries, though
 getting the attribute off the model class is more concise.
 
 >>> AnimalType.members.get(_member_name='CAT')
-<AnimalType.CAT: name='Cat', description="Man's gracious overlord", domesticated=True>
+<AnimalType.CAT: name='Cat', description="Man's gracious overlord", domesticated=True, has_legs=True>
 >>> getattr(AnimalType, 'DOG')
-<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True>
+<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True, has_legs=True>
 >>>
 
 ==========
@@ -746,20 +793,20 @@ Models can have sub-models. Sub-models are created using normal
 sub-class syntax.
 
 >>> class WildAnimalType(AnimalType):
-...     DEER = 'Deer', 'Likes to hide', False
-...     ANTELOPE = 'Antelope', 'Likes to run', False
+...     DEER = 'Deer', 'Likes to hide', False, True
+...     ANTELOPE = 'Antelope', 'Likes to run', False, True
 ...
 ...     def walk(self):
-...         return '{}warily'.format(super(WildAnimalType, self).walk())
+...         return '{}warily'.format(super().walk())
 >>>
 
 Sub-models inherit the ``_field_names`` attribute of their parent model.
 
 >>> WildAnimalType._field_names
-('name', 'description', 'domesticated')
+('name', 'description', 'domesticated', 'has_legs')
 >>>
 >>> WildAnimalType.DEER
-<WildAnimalType.DEER: name='Deer', description='Likes to hide', domesticated=False>
+<WildAnimalType.DEER: name='Deer', description='Likes to hide', domesticated=False, has_legs=True>
 >>>
 
 However, sub-models DO NOT inherit the members of their parent model.
@@ -770,8 +817,8 @@ Traceback (most recent call last):
 AttributeError: 'WildAnimalType' model does not contain member 'DOG'
 >>>
 >>> pp(WildAnimalType.members.all())
-[<WildAnimalType.DEER: name='Deer', description='Likes to hide', domesticated=False>,
- <WildAnimalType.ANTELOPE: name='Antelope', description='Likes to run', domesticated=False>]
+[<WildAnimalType.DEER: name='Deer', description='Likes to hide', domesticated=False, has_legs=True>,
+ <WildAnimalType.ANTELOPE: name='Antelope', description='Likes to run', domesticated=False, has_legs=True>]
 >>>
 
 Parent models **gain the members** of their sub-models. Notice that the
@@ -779,10 +826,11 @@ Parent models **gain the members** of their sub-models. Notice that the
 ``WildAnimalType`` sub-model.
 
 >>> pp(AnimalType.members.all())
-[<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True>,
- <AnimalType.CAT: name='Cat', description="Man's gracious overlord", domesticated=True>,
- <WildAnimalType.DEER: name='Deer', description='Likes to hide', domesticated=False>,
- <WildAnimalType.ANTELOPE: name='Antelope', description='Likes to run', domesticated=False>]
+[<AnimalType.DOG: name='Dog', description="Man's best friend", domesticated=True, has_legs=True>,
+ <AnimalType.CAT: name='Cat', description="Man's gracious overlord", domesticated=True, has_legs=True>,
+ <AnimalType.SNAKE: name='Snake', description="Man's slithering companion", domesticated=True, has_legs=False>,
+ <WildAnimalType.DEER: name='Deer', description='Likes to hide', domesticated=False, has_legs=True>,
+ <WildAnimalType.ANTELOPE: name='Antelope', description='Likes to run', domesticated=False, has_legs=True>]
 >>>
 
 The members that the parent has gained are accessed exactly the same
@@ -791,8 +839,11 @@ way as the other members, and behave as expected.
 >>> pp([item.walk() for item in AnimalType.members.all()])
 ['Dog walking...',
  'Cat walking...',
+ "Snake can't walk.",
  'Deer walking...warily',
  'Antelope walking...warily']
+>>>
+
 
 -----------------
 Additional fields
@@ -805,14 +856,14 @@ values as demonstrated in the ``SmallHousePet`` model below.
 >>> class SmallHousePet(AnimalType):
 ...     _field_names = AnimalType._field_names + ('facility',)
 ...
-...     FISH = 'Fish', 'Likes to swim', True, 'tank'
-...     RODENT = 'Rodent', 'Likes to eat', True, 'cage'
+...     FISH = 'Fish', 'Likes to swim', True, True, 'tank'
+...     RODENT = 'Rodent', 'Likes to eat', True, True, 'cage'
 >>>
 
 Member queries on the sub-model can use the additional field names.
 
 >>> pp(SmallHousePet.members.filter(facility='tank'))
-[<SmallHousePet.FISH: name='Fish', description='Likes to swim', domesticated=True, facility='tank'>]
+[<SmallHousePet.FISH: name='Fish', description='Likes to swim', domesticated=True, has_legs=True, facility='tank'>]
 >>>
 
 Parent models are not aware of additional fields that have been added
@@ -848,32 +899,44 @@ The ``values()`` method returns a list of dictionaries.
   {
     "name": "Dog",
     "description": "Man's best friend",
-    "domesticated": true
+    "domesticated": true,
+    "has_legs": true
   },
   {
     "name": "Cat",
     "description": "Man's gracious overlord",
-    "domesticated": true
+    "domesticated": true,
+    "has_legs": true
+  },
+  {
+    "name": "Snake",
+    "description": "Man's slithering companion",
+    "domesticated": true,
+    "has_legs": false
   },
   {
     "name": "Deer",
     "description": "Likes to hide",
-    "domesticated": false
+    "domesticated": false,
+    "has_legs": true
   },
   {
     "name": "Antelope",
     "description": "Likes to run",
-    "domesticated": false
+    "domesticated": false,
+    "has_legs": true
   },
   {
     "name": "Fish",
     "description": "Likes to swim",
-    "domesticated": true
+    "domesticated": true,
+    "has_legs": true
   },
   {
     "name": "Rodent",
     "description": "Likes to eat",
-    "domesticated": true
+    "domesticated": true,
+    "has_legs": true
   }
 ]
 >>> jsonify(AnimalType.members.filter(name='Rodent').values())
@@ -881,21 +944,25 @@ The ``values()`` method returns a list of dictionaries.
   {
     "name": "Rodent",
     "description": "Likes to eat",
-    "domesticated": true
+    "domesticated": true,
+    "has_legs": true
   }
 ]
+>>>
 
 The ``values_list()`` method returns a list of tuples.
 
 >>> pp(AnimalType.members.all().values_list())
-[('Dog', "Man's best friend", True),
- ('Cat', "Man's gracious overlord", True),
- ('Deer', 'Likes to hide', False),
- ('Antelope', 'Likes to run', False),
- ('Fish', 'Likes to swim', True),
- ('Rodent', 'Likes to eat', True)]
+[('Dog', "Man's best friend", True, True),
+ ('Cat', "Man's gracious overlord", True, True),
+ ('Snake', "Man's slithering companion", True, False),
+ ('Deer', 'Likes to hide', False, True),
+ ('Antelope', 'Likes to run', False, True),
+ ('Fish', 'Likes to swim', True, True),
+ ('Rodent', 'Likes to eat', True, True)]
 >>> pp(AnimalType.members.filter(domesticated=False).values_list())
-[('Deer', 'Likes to hide', False), ('Antelope', 'Likes to run', False)]
+[('Deer', 'Likes to hide', False, True),
+ ('Antelope', 'Likes to run', False, True)]
 >>>
 
 Notice that when the ``AnimalType`` model was used to execute ``.values()`` or
@@ -910,19 +977,28 @@ provided by passing them as positional parameters to those methods.
 [
   {
     "name": "Dog",
-    "domesticated": true
+    "domesticated": true,
+    "facility": null
   },
   {
     "name": "Cat",
-    "domesticated": true
+    "domesticated": true,
+    "facility": null
+  },
+  {
+    "name": "Snake",
+    "domesticated": true,
+    "facility": null
   },
   {
     "name": "Deer",
-    "domesticated": false
+    "domesticated": false,
+    "facility": null
   },
   {
     "name": "Antelope",
-    "domesticated": false
+    "domesticated": false,
+    "facility": null
   },
   {
     "name": "Fish",
@@ -936,41 +1012,18 @@ provided by passing them as positional parameters to those methods.
   }
 ]
 >>> pp(AnimalType.members.all().values_list('name', 'description', 'facility'))
-[('Dog', "Man's best friend"),
- ('Cat', "Man's gracious overlord"),
- ('Deer', 'Likes to hide'),
- ('Antelope', 'Likes to run'),
+[('Dog', "Man's best friend", None),
+ ('Cat', "Man's gracious overlord", None),
+ ('Snake', "Man's slithering companion", None),
+ ('Deer', 'Likes to hide', None),
+ ('Antelope', 'Likes to run', None),
  ('Fish', 'Likes to swim', 'tank'),
  ('Rodent', 'Likes to eat', 'cage')]
 >>>
 
-Notice that some members have the ``facility`` field and some don't,
-reflecting their actual contents. No placeholders are added in the
-results.
-
-Members that don't have ANY of the fields are excluded from the
-results.
-
->>> jsonify(AnimalType.members.all().values('facility'))
-[
-  {
-    "facility": "tank"
-  },
-  {
-    "facility": "cage"
-  }
-]
->>>
->>> jsonify(AnimalType.members.all().values_list('facility'))
-[
-  [
-    "tank"
-  ],
-  [
-    "cage"
-  ]
-]
->>>
+Notice that some members have the ``facility`` field set to None (or null
+when converted to JSON). These are placeholders for fields that were
+requested, but do not exist on that member.
 
 The ``values_list()`` method can be passed the ``flat=True`` parameter
 to collapse the values in the result.
@@ -980,17 +1033,19 @@ to collapse the values in the result.
   "tank",
   "cage"
 ]
+>>>
 
 Using ``flat=True`` usually only makes sense when limiting the results
 to a single field name.
 
->>>
 >>> jsonify(AnimalType.members.all().values_list('name', 'description', flat=True))
 [
   "Dog",
   "Man's best friend",
   "Cat",
   "Man's gracious overlord",
+  "Snake",
+  "Man's slithering companion",
   "Deer",
   "Likes to hide",
   "Antelope",

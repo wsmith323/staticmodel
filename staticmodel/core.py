@@ -1,26 +1,21 @@
-from __future__ import unicode_literals
-
 from collections import Iterable, OrderedDict
+from functools import partialmethod
 from itertools import chain
+from types import SimpleNamespace
 
-import six
-
-from .compat.preparable import Prepareable
-from .compat.partialmethod import partialmethod
-from .compat.simplenamespace import SimpleNamespace
 from .util import format_kwargs
 
 
-class ATTR_NAME:
-    class CLASS_VAR:
-        ATTR_NAMES = '_field_names'
+class AttrName:
+    class CLASS:
+        FIELD_NAMES = '_field_names'
 
-    class INSTANCE_VAR:
+    class INSTANCE:
         MEMBER_NAME = '_member_name'
         RAW_VALUE = '_raw_value'
 
 
-class StaticModelMeta(six.with_metaclass(Prepareable, type)):
+class StaticModelMeta(type):
     @classmethod
     def __prepare__(mcs, name, bases, **kwargs):
         return OrderedDict()
@@ -41,10 +36,10 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
 
         attrs['_{}__raw_members'.format(name)] = raw_members
 
-        return super(StaticModelMeta, mcs).__new__(mcs, name, bases, attrs)
+        return super().__new__(mcs, name, bases, attrs)
 
     def __init__(cls, *args, **kwargs):
-        super(StaticModelMeta, cls).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         cls._submodels = OrderedDict()
         cls._members = SimpleNamespace(
@@ -83,11 +78,11 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                 raise AttributeError('{!r} model does not contain member {!r}'.format(
                     cls.__name__, item))
         else:
-            return super(StaticModelMeta, cls).__getattribute__(item)
+            return super().__getattribute__(item)
 
     def __setattr__(cls, key, value):
         if key.startswith('_') or key != key.upper():
-            super(StaticModelMeta, cls).__setattr__(key, value)
+            super().__setattr__(key, value)
         else:
             try:
                 existing_value = getattr(cls, key)
@@ -103,7 +98,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
             else:
                 instance = cls(raw_value=value, member_name=key)
 
-            super(StaticModelMeta, cls).__setattr__(key, instance)
+            super().__setattr__(key, instance)
 
     def __call__(
             cls, raw_value=None, member_name=None, field_names=None, *field_values,
@@ -116,17 +111,16 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
             raise ValueError(
                 "Value for 'member_name' parameter must be all uppercase.")
 
-        if raw_value and isinstance(raw_value, Iterable) and not isinstance(
-                raw_value, six.string_types):
+        if raw_value and isinstance(raw_value, Iterable) and not isinstance(raw_value, str):
             field_values = raw_value
 
         field_names = field_names or getattr(cls, '_field_names', None)
         if not field_names:
             raise ValueError("At lease one field must be defined")
 
-        instance = super(StaticModelMeta, cls).__call__(**dict(zip(field_names, field_values)))
+        instance = super().__call__(**dict(zip(field_names, field_values)))
 
-        setattr(instance, ATTR_NAME.INSTANCE_VAR.RAW_VALUE, raw_value)
+        setattr(instance, AttrName.INSTANCE.RAW_VALUE, raw_value)
 
         cls._process_new_instance(member_name, instance)
 
@@ -157,18 +151,18 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                     continue
                 for member in cls._members.by_id.values():
                     member_name = getattr(
-                        member, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, None)
+                        member, AttrName.INSTANCE.MEMBER_NAME, None)
                     if member_name is not None:
                         setattr(parent, member_name, member)
                 parent.register_submodel(cls)
                 cls._populate_ancestors(parent)
 
     def _process_new_instance(cls, member_name, instance):
-        instance_member_name = getattr(instance, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, None)
+        instance_member_name = getattr(instance, AttrName.INSTANCE.MEMBER_NAME, None)
         if instance_member_name and member_name and instance_member_name != member_name:
             raise ValueError('Member {!r} already has a member name'.format(instance))
 
-        setattr(instance, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME, member_name)
+        setattr(instance, AttrName.INSTANCE.MEMBER_NAME, member_name)
 
         cls._members.by_id[id(instance)] = instance
         if member_name is not None:
@@ -176,7 +170,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         cls._index_instance(instance)
 
     def _index_instance(cls, instance):
-        for index_attr in (ATTR_NAME.INSTANCE_VAR.RAW_VALUE, ) + cls._field_names:
+        for index_attr in (AttrName.INSTANCE.RAW_VALUE,) + cls._field_names:
             index = cls._indexes.setdefault(index_attr, OrderedDict())
             try:
                 value = getattr(instance, index_attr)
@@ -198,10 +192,10 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
         # other indexes if we miss there.
         sorted_kwargs = sorted(
             criteria.items(),
-            key=lambda x: x[0] != ATTR_NAME.INSTANCE_VAR.MEMBER_NAME)
+            key=lambda x: x[0] != AttrName.INSTANCE.MEMBER_NAME)
 
         for field_name, field_value in sorted_kwargs:
-            if field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME:
+            if field_name == AttrName.INSTANCE.MEMBER_NAME:
                 index = cls._members.by_member_name
                 try:
                     result = index[field_value]
@@ -244,6 +238,9 @@ class StaticModelMemberManager(object):
             self.model._members.by_id.values(), model=self.model)
 
     def filter(self, **criteria):
+        if not criteria:
+            return self.all()
+
         index_search_results = self.model._get_index_search_results(criteria)
 
         results = []
@@ -251,7 +248,7 @@ class StaticModelMemberManager(object):
         validated_member_ids = set()
         for member in index_search_results:
             for field_name, field_value in criteria.items():
-                if (field_name == ATTR_NAME.INSTANCE_VAR.MEMBER_NAME and
+                if (field_name == AttrName.INSTANCE.MEMBER_NAME and
                         self.model._members.by_member_name.get(
                             field_value) is member):
                     continue
@@ -289,8 +286,26 @@ class StaticModelMemberManager(object):
                 '{}.members.get({}) yielded multiple objects.'.format(
                     self.model.__name__, format_kwargs(kwargs)))
 
+    def choices(self, *fields, **criteria):
+        if len(fields) > 2:
+            raise ValueError(
+                'Maximum number of specified fields for {0}.members.choices() is 2'.format(
+                    self.model.__name__))
+        if fields:
+            for field in fields:
+                if field not in self.model._field_names:
+                    raise ValueError('{0}.members.choices() requires {0} field name(s)'.format(
+                        self.model.__name__))
+        else:
+            fields = self.model._field_names[:2]
 
-class StaticModel(six.with_metaclass(StaticModelMeta), object):
+        if len(fields) < 2:
+            fields = [fields[0], fields[0]]
+
+        return self.filter(**criteria).values_list(*fields)
+
+
+class StaticModel(metaclass=StaticModelMeta):
     """
     Base class for static models.
     """
@@ -312,18 +327,22 @@ class StaticModel(six.with_metaclass(StaticModelMeta), object):
     def __repr__(self):
         return '<{}.{}: {}>'.format(
             self.__class__.__name__,
-            getattr(self, ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
-            format_kwargs(OrderedDict(
-                (field_name, getattr(self, field_name, None))
-                for field_name in self._field_names)),
+            getattr(self, AttrName.INSTANCE.MEMBER_NAME),
+            format_kwargs(self._as_dict),
         )
+
+    @property
+    def _as_dict(self):
+        return OrderedDict(
+            (field_name, getattr(self, field_name, None))
+            for field_name in self._field_names)
 
 
 class StaticModelMembers(list):
 
     def __init__(self, *args, **kwargs):
         self.model = kwargs.pop('model')
-        super(StaticModelMembers, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _values_base(self, item_func, *field_names, **kwargs):
         allow_flat = kwargs.pop('allow_flat', False)
@@ -333,8 +352,8 @@ class StaticModelMembers(list):
             field_names = self.model._field_names
 
         elif not frozenset(field_names).issubset(frozenset(chain(
-                (ATTR_NAME.INSTANCE_VAR.MEMBER_NAME,
-                 ATTR_NAME.INSTANCE_VAR.MEMBER_NAME),
+                (AttrName.INSTANCE.MEMBER_NAME,
+                 AttrName.INSTANCE.MEMBER_NAME),
                 chain(self.model.__dict__.keys(), self.model._field_names),
                 chain.from_iterable(chain(
                     submodel.__dict__.keys(), submodel._field_names)
@@ -359,19 +378,13 @@ class StaticModelMembers(list):
         return results
 
     def _values_item(item, field_names):
-        rendered_item = []
-        for field_name in field_names:
-            field_value = getattr(item, field_name, None)
-            if field_value is not None:
-                rendered_item.append((field_name, field_value))
-        return OrderedDict(rendered_item)
+        item_dict = item._as_dict
+        return OrderedDict((key, item_dict.pop(key, None)) for key in field_names)
     values = partialmethod(_values_base, _values_item)
 
     def _values_list_item(item, field_names):
         rendered_item = []
         for field_name in field_names:
-            field_value = getattr(item, field_name, None)
-            if field_value is not None:
-                rendered_item.append(field_value)
+            rendered_item.append(getattr(item, field_name, None))
         return tuple(rendered_item)
     values_list = partialmethod(_values_base, _values_list_item, allow_flat=True)
