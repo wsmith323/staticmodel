@@ -1,4 +1,5 @@
 from unittest.case import TestCase
+from types import SimpleNamespace
 
 from rest_framework.serializers import ModelSerializer
 
@@ -10,9 +11,11 @@ from staticmodel.django.rest_framework.serializers import (
 
 
 class TestModelSerializer(ModelSerializer):
-    char = StaticModelCharField(static_model=String, required=False)
-    text = StaticModelCharField(static_model=String, required=False)
-    integer = StaticModelIntegerField(static_model=Integer, required=False)
+    char = StaticModelCharField(
+        static_model=String, required=False, allow_null=True, allow_blank=True)
+    text = StaticModelCharField(
+        static_model=String, required=False, allow_null=True, allow_blank=True)
+    integer = StaticModelIntegerField(static_model=Integer, required=False, allow_null=True)
 
     class Meta:
         model = TestModel
@@ -67,10 +70,11 @@ class SerializerFieldTest(TestCase):
             'integer': Integer.VALUE_2.value,
         })
         self.assertTrue(serializer.is_valid())
-        self.assertEqual(serializer.object.name, 'Test Object 3')
-        self.assertIs(serializer.object.char, String.VALUE_2)
-        self.assertIs(serializer.object.text, String.VALUE_2)
-        self.assertIs(serializer.object.integer, Integer.VALUE_2)
+        validated_obj = SimpleNamespace(**serializer.validated_data)
+        self.assertEqual(validated_obj.name, 'Test Object 3')
+        self.assertIs(validated_obj.char, String.VALUE_2)
+        self.assertIs(validated_obj.text, String.VALUE_2)
+        self.assertIs(validated_obj.integer, Integer.VALUE_2)
 
         serializer.save()
         object1.refresh_from_db()
@@ -87,10 +91,11 @@ class SerializerFieldTest(TestCase):
             'integer': None,
         })
         self.assertTrue(serializer.is_valid())
-        self.assertEqual(serializer.object.name, 'Test Object 4')
-        self.assertIs(serializer.object.char, None)
-        self.assertIs(serializer.object.text, None)
-        self.assertIs(serializer.object.integer, None)
+        validated_obj = SimpleNamespace(**serializer.validated_data)
+        self.assertEqual(validated_obj.name, 'Test Object 4')
+        self.assertIs(validated_obj.char, None)
+        self.assertIs(validated_obj.text, None)
+        self.assertIs(validated_obj.integer, None)
 
         serializer.save()
         object2.refresh_from_db()

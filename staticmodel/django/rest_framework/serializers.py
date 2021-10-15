@@ -3,7 +3,7 @@
 Django Rest Framework serializer fields
 ***************************************
 
-**Static Model** provides custom DRF (2.x) serializer fields in the
+**Static Model** provides custom serializer fields in the
 ``staticmodel.django.rest_framework.serializers`` module:
 
  * ``StaticModelCharField`` (sub-class of ``rest_framework.serializers.CharField``)
@@ -25,8 +25,9 @@ arguments taken by their respective parent classes:
    static model member when deserializing. Defaults to the first field
    name in ``static_model._field_names``.
 """
-from django.core.exceptions import ValidationError
+from collections.abc import Mapping
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from staticmodel import StaticModel
 
 
@@ -48,24 +49,37 @@ class StaticModelFieldMixin(object):
             lookup_field_name = self._static_model._field_names[0]
         self._lookup_field_name = lookup_field_name
 
+        self._expand = kwargs.pop('static_model_expand', False)
+
         super().__init__(*args, **kwargs)
 
-    def to_native(self, value):
+    def to_representation(self, value):
         if value is None:
             return value
         elif isinstance(value, self._static_model):
-            return getattr(value, self._lookup_field_name)
+            if self._expand:
+                return value._as_dict
+            else:
+                return getattr(value, self._lookup_field_name)
         else:
             raise ValueError("Invalid value for 'value' parameter")
 
-    def from_native(self, value):
-        if value is None:
-            return value
+    def to_internal_value(self, data):
+        if data is None:
+            return data
         else:
+            if isinstance(data, Mapping):
+                try:
+                    lookup_value = data[self._lookup_field_name]
+                except KeyError:
+                    raise ValidationError("Representation missing field '{}'".format(
+                        self._lookup_field_name))
+            else:
+                lookup_value = data
             try:
-                return self._static_model.members.get(**{self._lookup_field_name: value})
+                return self._static_model.members.get(**{self._lookup_field_name: lookup_value})
             except self._static_model.DoesNotExist as e:
-                raise ValidationError("Value {!r} is invalid".format(value))
+                raise ValidationError("Value {!r} is invalid".format(data))
 
 
 class StaticModelCharField(StaticModelFieldMixin, serializers.CharField):
