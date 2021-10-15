@@ -52,7 +52,6 @@ The problems using built-ins for complex constants
 Let's start with a couple of normal constants and then modify them
 as the code evolves.
 
->>> from __future__ import print_function
 >>> # Prettier collection display
 >>> from pprint import pprint as pp
 >>>
@@ -798,7 +797,7 @@ sub-class syntax.
 ...     ANTELOPE = 'Antelope', 'Likes to run', False, True
 ...
 ...     def walk(self):
-...         return '{}warily'.format(super(WildAnimalType, self).walk())
+...         return '{}warily'.format(super().walk())
 >>>
 
 Sub-models inherit the ``_field_names`` attribute of their parent model.

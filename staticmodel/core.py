@@ -1,13 +1,8 @@
-from __future__ import unicode_literals
-
 from collections import Iterable, OrderedDict
+from functools import partialmethod
 from itertools import chain
+from types import SimpleNamespace
 
-import six
-
-from .compat.preparable import Prepareable
-from .compat.partialmethod import partialmethod
-from .compat.simplenamespace import SimpleNamespace
 from .util import format_kwargs
 
 
@@ -20,7 +15,7 @@ class AttrName:
         RAW_VALUE = '_raw_value'
 
 
-class StaticModelMeta(six.with_metaclass(Prepareable, type)):
+class StaticModelMeta(type):
     @classmethod
     def __prepare__(mcs, name, bases, **kwargs):
         return OrderedDict()
@@ -41,10 +36,10 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
 
         attrs['_{}__raw_members'.format(name)] = raw_members
 
-        return super(StaticModelMeta, mcs).__new__(mcs, name, bases, attrs)
+        return super().__new__(mcs, name, bases, attrs)
 
     def __init__(cls, *args, **kwargs):
-        super(StaticModelMeta, cls).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         cls._submodels = OrderedDict()
         cls._members = SimpleNamespace(
@@ -83,11 +78,11 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
                 raise AttributeError('{!r} model does not contain member {!r}'.format(
                     cls.__name__, item))
         else:
-            return super(StaticModelMeta, cls).__getattribute__(item)
+            return super().__getattribute__(item)
 
     def __setattr__(cls, key, value):
         if key.startswith('_') or key != key.upper():
-            super(StaticModelMeta, cls).__setattr__(key, value)
+            super().__setattr__(key, value)
         else:
             try:
                 existing_value = getattr(cls, key)
@@ -103,7 +98,7 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
             else:
                 instance = cls(raw_value=value, member_name=key)
 
-            super(StaticModelMeta, cls).__setattr__(key, instance)
+            super().__setattr__(key, instance)
 
     def __call__(
             cls, raw_value=None, member_name=None, field_names=None, *field_values,
@@ -116,15 +111,14 @@ class StaticModelMeta(six.with_metaclass(Prepareable, type)):
             raise ValueError(
                 "Value for 'member_name' parameter must be all uppercase.")
 
-        if raw_value and isinstance(raw_value, Iterable) and not isinstance(
-                raw_value, six.string_types):
+        if raw_value and isinstance(raw_value, Iterable) and not isinstance(raw_value, str):
             field_values = raw_value
 
         field_names = field_names or getattr(cls, '_field_names', None)
         if not field_names:
             raise ValueError("At lease one field must be defined")
 
-        instance = super(StaticModelMeta, cls).__call__(**dict(zip(field_names, field_values)))
+        instance = super().__call__(**dict(zip(field_names, field_values)))
 
         setattr(instance, AttrName.INSTANCE.RAW_VALUE, raw_value)
 
@@ -311,8 +305,7 @@ class StaticModelMemberManager(object):
         return self.filter(**criteria).values_list(*fields)
 
 
-@six.add_metaclass(StaticModelMeta)
-class StaticModel(object):
+class StaticModel(metaclass=StaticModelMeta):
     """
     Base class for static models.
     """
@@ -349,7 +342,7 @@ class StaticModelMembers(list):
 
     def __init__(self, *args, **kwargs):
         self.model = kwargs.pop('model')
-        super(StaticModelMembers, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _values_base(self, item_func, *field_names, **kwargs):
         allow_flat = kwargs.pop('allow_flat', False)
