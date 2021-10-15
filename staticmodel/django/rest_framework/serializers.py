@@ -9,21 +9,22 @@ Django Rest Framework serializer fields
  * ``StaticModelCharField`` (sub-class of ``rest_framework.serializers.CharField``)
  * ``StaticModelIntegerField`` (sub-class of ``rest_framework.serializers.IntegerField``)
 
-Currently, only a single field value is extracted from the static model
-instance when serializing. Support for serializing the entire instance
-as a nested dict will be added in the future.
-
-When deserializing, the single field value is looked up in the static model
-and the corresponding member is returned.
-
 All fields take the following keyword arguments in addition to the
 arguments taken by their respective parent classes:
 
  * ``static_model``: The static model class associated with this field.
- * ``lookup_field_name``: The static model field name that will be
-   returned during serialization and that will be used to lookup the
-   static model member when deserializing. Defaults to the first field
-   name in ``static_model._field_names``.
+ * ``lookup_field_name``: The static model field name that will be used
+   to lookup the static model member when deserializing, and the field
+   name to retrieve the value from when serializing (unless
+   ``static_model_expand=True``. See below.). Defaults to the first field
+    name in ``static_model._field_names``.
+ * ``static_model_expand``: When set to ``True``, return the entire
+    static model member as a mapping. Defaults to ``False``.
+
+Regardless of the value of ``static_model_expand``, if the value passed
+during deserialization is a mapping, it will be used to retrieve the
+lookup value using ``lookup_field_name``.
+
 """
 from collections.abc import Mapping
 from rest_framework import serializers
@@ -58,7 +59,7 @@ class StaticModelFieldMixin(object):
             return value
         elif isinstance(value, self._static_model):
             if self._expand:
-                return value._as_dict
+                return dict(value._as_dict)
             else:
                 return getattr(value, self._lookup_field_name)
         else:

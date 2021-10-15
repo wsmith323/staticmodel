@@ -12,7 +12,8 @@ from staticmodel.django.rest_framework.serializers import (
 
 class TestModelSerializer(ModelSerializer):
     char = StaticModelCharField(
-        static_model=String, required=False, allow_null=True, allow_blank=True)
+        static_model=String, static_model_expand=True, required=False, allow_null=True,
+        allow_blank=True)
     text = StaticModelCharField(
         static_model=String, required=False, allow_null=True, allow_blank=True)
     integer = StaticModelIntegerField(static_model=Integer, required=False, allow_null=True)
@@ -44,7 +45,7 @@ class SerializerFieldTest(TestCase):
         self.assertDictEqual(serializer.data, {
             'id': 1,
             'name': 'Test Object 1',
-            'char': String.VALUE_1.code,
+            'char': {'code': 'value_1', 'display': 'String Value 1'},
             'text': String.VALUE_1.code,
             'integer': Integer.VALUE_1.value,
         })
@@ -66,7 +67,7 @@ class SerializerFieldTest(TestCase):
             'id': 1,
             'name': 'Test Object 3',
             'char': String.VALUE_2.code,
-            'text': String.VALUE_2.code,
+            'text': {'code': 'value_2', 'display': 'String Value 2'},
             'integer': Integer.VALUE_2.value,
         })
         self.assertTrue(serializer.is_valid())
