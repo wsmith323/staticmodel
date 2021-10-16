@@ -219,7 +219,7 @@ class StaticModelMeta(type):
                         yield item
 
 
-class StaticModelMemberManager(object):
+class StaticModelMemberManager:
     """
     Manager API for StaticModel instances.
 

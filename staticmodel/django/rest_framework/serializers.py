@@ -32,7 +32,7 @@ from rest_framework.exceptions import ValidationError
 from staticmodel import StaticModel
 
 
-class StaticModelFieldMixin(object):
+class StaticModelFieldMixin:
 
     def __init__(self, *args, **kwargs):
         static_model = kwargs.pop('static_model', None)
