@@ -17,9 +17,9 @@ arguments taken by their respective parent classes:
    to lookup the static model member when deserializing, and the field
    name to retrieve the value from when serializing (unless
    ``static_model_expand=True``. See below.). Defaults to the first field
-    name in ``static_model._field_names``.
+   name in ``static_model._field_names``.
  * ``static_model_expand``: When set to ``True``, return the entire
-    static model member as a mapping. Defaults to ``False``.
+   static model member as a mapping. Defaults to ``False``.
 
 Regardless of the value of ``static_model_expand``, if the value passed
 during deserialization is a mapping, it will be used to retrieve the
@@ -32,7 +32,7 @@ from rest_framework.exceptions import ValidationError
 from staticmodel import StaticModel
 
 
-class StaticModelFieldMixin(object):
+class StaticModelFieldMixin:
 
     def __init__(self, *args, **kwargs):
         static_model = kwargs.pop('static_model', None)

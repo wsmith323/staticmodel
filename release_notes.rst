@@ -1,6 +1,15 @@
 Static Model release notes
 ===========================
 
+1.1.0
+=====
+* Explicit subclassing of 'object' type has been removed.
+* Main documentation has been extensively updated to compare against the
+  built-in 'Enum' type.
+* Formatting of Django Rest Framework serializer fields documentation has been
+  fixed.
+* Version number in documentation has been fixed.
+
 1.0.0
 =====
 IMPORTANT: This version is not backwards compatible with code using 0.x.

@@ -36,7 +36,7 @@ from django.db import models
 from staticmodel import StaticModel
 
 
-class StaticModelFieldMixin(object):
+class StaticModelFieldMixin:
     def __init__(self, *args, **kwargs):
         self._static_model = kwargs.pop('static_model', None)
         if not self._static_model:
