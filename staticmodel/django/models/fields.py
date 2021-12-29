@@ -98,7 +98,7 @@ class StaticModelFieldMixin:
         else:
             return value
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection, *args):
         if value is None:
             return value
         else:

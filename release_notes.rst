@@ -1,6 +1,10 @@
 Static Model release notes
 ===========================
 
+1.1.1
+=====
+* Fix incompatibility of model fields with newer Django versions.
+
 1.1.0
 =====
 * Explicit subclassing of 'object' type has been removed.
