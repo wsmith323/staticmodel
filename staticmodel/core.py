@@ -1,4 +1,5 @@
-from collections import Iterable, OrderedDict
+from collections import OrderedDict
+from collections.abc import Iterable
 from functools import partialmethod
 from itertools import chain
 from types import SimpleNamespace
