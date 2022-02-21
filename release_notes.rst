@@ -1,6 +1,10 @@
 Static Model release notes
 ===========================
 
+1.1.2
+=====
+* Fix incompatibility with Python 3.10
+
 1.1.1
 =====
 * Fix incompatibility of model fields with newer Django versions.
