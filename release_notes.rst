@@ -1,6 +1,10 @@
 Static Model release notes
 ===========================
 
+1.1.3
+=====
+* Fix broken 1.1.2 distribution
+
 1.1.2
 =====
 * Fix incompatibility with Python 3.10
