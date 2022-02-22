@@ -15,7 +15,7 @@ __version__ = file_read(os.path.join('staticmodel', 'VERSION.txt')).strip()
 setup(
     name="staticmodel",
     version=__version__,
-    # packages=find_packages(exclude=['tests', 'docs']),
+    packages=find_packages(exclude=['tests', 'docs']),
     include_package_data=True,
     author="Warren A. Smith",
     author_email="warren@wandrsmith.net",
@@ -40,7 +40,6 @@ setup(
 
             # Specify the Python versions you support here. In particular, ensure
             # that you indicate whether you support Python 2, Python 3 or both.
-            'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3',
             'Programming Language :: Python :: 3.4',
             'Programming Language :: Python :: 3.5',
