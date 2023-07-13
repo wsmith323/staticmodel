@@ -1,6 +1,6 @@
-from unittest.case import TestCase
 from types import SimpleNamespace
 
+from django.test import TestCase
 from rest_framework.serializers import ModelSerializer
 
 from django_test_app.models import Integer, String, TestModel

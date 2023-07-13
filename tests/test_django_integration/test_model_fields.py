@@ -1,6 +1,5 @@
-from unittest.case import TestCase
-
 from django.core.exceptions import ValidationError
+from django.test import TestCase
 
 from django_test_app.models import Integer, String, TestModel
 
