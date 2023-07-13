@@ -1,0 +1,7 @@
+[tool.black]
+# Absolute max allowed by PEP-8
+line-length = 99
+target-version = ['py39', 'py310', 'py311']
+
+[tool.isort]
+profile = "black"
