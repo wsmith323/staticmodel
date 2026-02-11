@@ -1,6 +1,10 @@
 Static Model release notes
 ===========================
 
+1.1.5
+=====
+* Republish 1.1.4 fixes as a new version after yanking incomplete 1.1.4.
+
 1.1.4
 =====
 * Upgrade to secure test dependency version
@@ -132,4 +136,3 @@ IMPORTANT: This version is not backwards compatible with code using 0.x.
 0.1.0
 =====
  * Initial release.
-
