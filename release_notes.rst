@@ -1,6 +1,11 @@
 Static Model release notes
 ===========================
 
+1.1.4
+=====
+* Upgrade to secure test dependency version
+* Fix documentation
+
 1.1.3
 =====
 * Fix broken 1.1.2 distribution
