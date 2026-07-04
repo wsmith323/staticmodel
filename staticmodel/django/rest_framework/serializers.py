@@ -1,31 +1,5 @@
-"""
-***************************************
-Django Rest Framework serializer fields
-***************************************
+"""Django REST Framework serializer fields backed by StaticModel members."""
 
-**Static Model** provides custom serializer fields in the
-``staticmodel.django.rest_framework.serializers`` module:
-
- * ``StaticModelCharField`` (sub-class of ``rest_framework.serializers.CharField``)
- * ``StaticModelIntegerField`` (sub-class of ``rest_framework.serializers.IntegerField``)
-
-All fields take the following keyword arguments in addition to the
-arguments taken by their respective parent classes:
-
- * ``static_model``: The static model class associated with this field.
- * ``lookup_field_name``: The static model field name that will be used
-   to lookup the static model member when deserializing, and the field
-   name to retrieve the value from when serializing (unless
-   ``static_model_expand=True``. See below.). Defaults to the first field
-   name in ``static_model._field_names``.
- * ``static_model_expand``: When set to ``True``, return the entire
-   static model member as a mapping. Defaults to ``False``.
-
-Regardless of the value of ``static_model_expand``, if the value passed
-during deserialization is a mapping, it will be used to retrieve the
-lookup value using ``lookup_field_name``.
-
-"""
 from collections.abc import Mapping
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
