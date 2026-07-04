@@ -35,7 +35,10 @@ https://staticmodel.readthedocs.org/en/latest.
 ## Documentation
 
 - [User Guide](docs/user-guide.md)
+    - [StaticModel classes](docs/user-guide.md#staticmodel-classes)
+    - [Member access methods](docs/user-guide.md#member-access-methods)
+    - [Sub-models](docs/user-guide.md#sub-models)
+    - [Primitive collections](docs/user-guide.md#primitive-collections)
+    - [Django model fields](docs/user-guide.md#django-model-fields)
+    - [Django REST Framework serializer fields](docs/user-guide.md#django-rest-framework-serializer-fields)
 - [Why StaticModel?](docs/rationale.md)
-
-The user guide includes the core StaticModel API, primitive collection output,
-Django model fields, and Django REST Framework serializer fields.

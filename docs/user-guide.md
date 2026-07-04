@@ -1,6 +1,17 @@
 # StaticModel User Guide
 
 
+## Contents
+
+
+- [StaticModel classes](#staticmodel-classes)
+- [Member access methods](#member-access-methods)
+- [Sub-models](#sub-models)
+- [Primitive collections](#primitive-collections)
+- [Django model fields](#django-model-fields)
+- [Django REST Framework serializer fields](#django-rest-framework-serializer-fields)
+
+
 ## StaticModel Classes
 
 
