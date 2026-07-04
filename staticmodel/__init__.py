@@ -1,4 +1,4 @@
-"""Framework for modeling collections of multi-valued constants."""
+"""Framework for modeling tabular constants."""
 
 from .core import StaticModel
 

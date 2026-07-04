@@ -7,7 +7,7 @@
 - [StaticModel classes](#staticmodel-classes)
 - [Member access methods](#member-access-methods)
 - [Sub-models](#sub-models)
-- [Primitive collections](#primitive-collections)
+- [Primitive representations](#primitive-representations)
 - [Django model fields](#django-model-fields)
 - [Django REST Framework serializer fields](#django-rest-framework-serializer-fields)
 
@@ -326,10 +326,10 @@ Invalid field 'facility'
 
 ```
 
-## Primitive Collections
+## Primitive representations
 
 
-Model members may be rendered as primitive collections.
+Model members may be rendered as primitive representations.
 
 The methods `members.all()` and `members.filter()` return a
 list with the methods `values()` and `values_list()` defined on it.

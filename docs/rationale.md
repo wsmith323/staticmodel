@@ -1,45 +1,42 @@
 # Why StaticModel?
 
+**StaticModel** is a simple framework for modeling tabular constants.
 
-**StaticModel** is a simple framework for modeling collections of
-multi-valued constants.
+## What are tabular constants?
 
-## What is a collection of multi-valued constants?
-
-
-To explain what it is, it first helps to understand what it is not.
+A tabular constant is a static, code-defined table where each named
+member is a row and each field is a column. To explain what that means,
+it first helps to understand what it is not.
 
 The data that our software processes is often represented as
-collections of multi-valued objects. These collections are often
-stored in a database and frameworks such as the Django ORM can be used
-to define and access them. Each item in the collection may have one or
-more unique identifiers, but the code should not know or care about any
-specific item in the collection.
+tables of row-shaped objects. These tables are often stored in a
+database, and frameworks such as the Django ORM can be used to define
+and access them. Each row may have one or more unique identifiers, but
+the code should not know or care about any specific row in the table.
 
-Some collections of multi-valued objects *ARE* tightly integrated with
-the code, in that the code uses specific values within a collection to
-affect its behavior. These collections should *NOT* be stored in a
-database. Doing so introduces many problems into the development,
-maintainence, and deployment of the code. These collections should be
-defined statically and used throughout the code via those definitions.
-These are the collections that **StaticModel** is used to define.
+Some row-shaped objects *ARE* tightly integrated with the code, in that
+the code uses specific rows to affect its behavior. These tables should
+*NOT* be stored in a database. Doing so introduces many problems into
+the development, maintenance, and deployment of the code. These tables
+should be defined statically and used throughout the code via those
+definitions. These are the tabular constants that **StaticModel** is
+used to define.
 
 **Can't we just use built-in collection types for this?**
 
 The simple answer is: **Yes**.
 
-However, as our code evolves and the collections become more numerous,
-gain more members, gain more values, and require custom behavior, using
-the built-in types leads to code that is harder to write, harder to read,
-verbose, repetitive, and ugly.
+However, as our code evolves and scalar constants become row-shaped,
+more numerous, and require custom behavior, using the built-in types
+leads to code that is harder to write, harder to read, verbose,
+repetitive, and ugly.
 
 **StaticModel** was created to solve these problems.
 
-But before we delve into the features of StaticModel, lets explore how
-we might implement a constant collection using built-in types.
+But before we delve into the features of StaticModel, let's explore how
+we might implement tabular constants using built-in types.
 
-## Using built-in types for constant collections
-
+## Using built-in types for tabular constants
 
 ```pycon
 >>> # Prettier collection display
@@ -122,8 +119,8 @@ However, since Python 3.4, a more sophisticated solution is the built-in
 
 ```
 
-`Enum` provides an api for defining, referencing, and de-referencing a
-constant collection, as well as supporting iteration.
+`Enum` provides an API for defining, referencing, and de-referencing a
+set of constants, as well as supporting iteration.
 
 Reference a member:
 
@@ -558,13 +555,13 @@ to since `namedtuple` builds `AnimalTypeAttrs`, but we can easily
 sub-class `AnimalTypeAttrs` to get around that.
 
 So here is what we need to do:
- - Create a sub-class of `AnimalTypeAttrs`
- - Add the base methods to it
- - Change the `AnimalType` methods to proxy to `self.value`
- - Build the classes that encapsulate the behavior
- - Instantiate the appropriate sub-class when we define the members of
-   `AnimalType`
 
+- Create a sub-class of `AnimalTypeAttrs`
+- Add the base methods to it
+- Change the `AnimalType` methods to proxy to `self.value`
+- Build the classes that encapsulate the behavior
+- Instantiate the appropriate sub-class when we define the members of
+  `AnimalType`
 
 ```pycon
 >>> AnimalTypeAttrs = namedtuple('AnimalTypeAttrs', (
@@ -678,37 +675,35 @@ This design accomplishes our goals. The imperative code has been greatly
 simplified and custom behavior has been moved to separate classes.
 
 But there are still some aspects of the design that are less than ideal:
- - Creation of the `AnimalType` members requires 8 class definitions.
- - The classes are in two separate class heirarchies.
- - The basic functionality is spread across 3 classes.
- - There is lots of repetition of the string 'AnimalType', even though
-   all we are doing is defining the `AnimalType` collection, not
-   actually using it. Granted, the custom behavior class names could be
-   shortened, but their current names describe exactly what they are.
- - The `repr()` of each member has become fairly complex, due to the
-   3 classes involved in its generation.
- - We have lost easy access to the sub-set of members that have a
-   behavior that is no longer driven by parameters. A method that
-   encapsulates a loop using `type()` or `isinstance()` to compare
-   a class argument to member values could be added to `MultiEnum` to
-   restore that capability, but a solution based on those operations is
-   less than ideal.
- - Because our behavior classes are all decending from
-   `AnimalTypeAttrs`, which is a `namedtuple`, any additional fields
-   that a behavior class needs must be added to the fields required by
-   *all* behavior class instantiations, even if those parameters are not
-   applicable to that class. This could be worked around by abandoing
-   `namedtuple` and writing a custom class that is more flexible, but
-   this would add yet more code to an already complex implementationan.
 
+- Creation of the `AnimalType` members requires 8 class definitions.
+- The classes are in two separate class heirarchies.
+- The basic functionality is spread across 3 classes.
+- There is lots of repetition of the string 'AnimalType', even though
+  all we are doing is defining the `AnimalType` collection, not
+  actually using it. Granted, the custom behavior class names could be
+  shortened, but their current names describe exactly what they are.
+- The `repr()` of each member has become fairly complex, due to the
+  3 classes involved in its generation.
+- We have lost easy access to the sub-set of members that have a
+  behavior that is no longer driven by parameters. A method that
+  encapsulates a loop using `type()` or `isinstance()` to compare
+  a class argument to member values could be added to `MultiEnum` to
+  restore that capability, but a solution based on those operations is
+  less than ideal.
+- Because our behavior classes are all decending from
+  `AnimalTypeAttrs`, which is a `namedtuple`, any additional fields
+  that a behavior class needs must be added to the fields required by
+  *all* behavior class instantiations, even if those parameters are not
+  applicable to that class. This could be worked around by abandoing
+  `namedtuple` and writing a custom class that is more flexible, but
+  this would add yet more code to an already complex implementationan.
 
 **StaticModel** helps simplify a design like this, and comes with
 additional features that simplify its use with Django and Django Rest
 Framework.
 
-
 ## The StaticModel solution
-
 
 So, lets take our existing `AnimalType` implementation and refactor it
 using **StaticModel**.
@@ -812,22 +807,21 @@ AnimalType.members.get(description='') yielded no objects.
 
 ```
 
-
 **Notice:**
- - Only 5 classes have been created, 4 of which provide custom behavior,
-   as before.
- - None of this implementation is a workaround.
- - Classes are in a single class heirarchy.
- - Basic functionality is contained in the single base class.
- - Members are defined on their class, much like `Enum`, puting the
-   instance data and the behavior that uses it close together.
- - The base `AnimalType` class gains the members defined on its
-   sub-classes, enabling polymorphic access to the entire collection.
- - The concise member declarations.
- - The ability to query `AnimalType` members with an api similar to the
-   Django ORM is provided, much like our `MultiEnum` class.
- - The `repr()` value of each member has been simplified.
- - Easy access to only members with a particular behavior.
- - Additional fields only have to be defined on and used for the classes
-   they apply to (see `ReluctantFlyerAnimalType`).
 
+- Only 5 classes have been created, 4 of which provide custom behavior,
+  as before.
+- None of this implementation is a workaround.
+- Classes are in a single class heirarchy.
+- Basic functionality is contained in the single base class.
+- Members are defined on their class, much like `Enum`, puting the
+  instance data and the behavior that uses it close together.
+- The base `AnimalType` class gains the members defined on its
+  sub-classes, enabling polymorphic access to the entire collection.
+- The concise member declarations.
+- The ability to query `AnimalType` members with an api similar to the
+  Django ORM is provided, much like our `MultiEnum` class.
+- The `repr()` value of each member has been simplified.
+- Easy access to only members with a particular behavior.
+- Additional fields only have to be defined on and used for the classes
+  they apply to (see `ReluctantFlyerAnimalType`).

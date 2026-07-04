@@ -24,6 +24,7 @@ constants.
 'Dog walking...'
 >>> AnimalType.members.get(name='Snake')
 <AnimalType.SNAKE: name='Snake', description="Man's slithering companion", has_legs=False>
+
 ```
 
 ## Documentation
@@ -32,11 +33,10 @@ constants.
     - [StaticModel classes](docs/user-guide.md#staticmodel-classes)
     - [Member access methods](docs/user-guide.md#member-access-methods)
     - [Sub-models](docs/user-guide.md#sub-models)
-    - [Primitive collections](docs/user-guide.md#primitive-collections)
+    - [Primitive representations](docs/user-guide.md#primitive-representations)
     - [Django model fields](docs/user-guide.md#django-model-fields)
     - [Django REST Framework serializer fields](docs/user-guide.md#django-rest-framework-serializer-fields)
 - [Why StaticModel?](docs/rationale.md)
 
 Read the full documentation:
 https://staticmodel.readthedocs.org/en/latest.
-
