@@ -1,13 +1,7 @@
 # StaticModel
 
-**StaticModel** provides a framework for modeling collections of complex
-constants in Python.
-
-Use it when specific values in a small, static collection are part of your
-application behavior and should live in code instead of a database.
-
-Read the full documentation:
-https://staticmodel.readthedocs.org/en/latest.
+**StaticModel** provides a framework for modeling and working with tabular
+constants.
 
 ## Quick Example
 
@@ -42,3 +36,7 @@ https://staticmodel.readthedocs.org/en/latest.
     - [Django model fields](docs/user-guide.md#django-model-fields)
     - [Django REST Framework serializer fields](docs/user-guide.md#django-rest-framework-serializer-fields)
 - [Why StaticModel?](docs/rationale.md)
+
+Read the full documentation:
+https://staticmodel.readthedocs.org/en/latest.
+
