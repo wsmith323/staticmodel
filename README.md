@@ -1,6 +1,6 @@
 # StaticModel
 
-**StaticModel** provides a framework for modeling and working with tabular
+**StaticModel** provides tools for modeling and working with tabular
 constants.
 
 ## Quick Example
